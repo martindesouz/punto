@@ -76,7 +76,8 @@ export function useGame(): GameApi {
     }
     const tick = () => setElapsedMs(Date.now() - game.startedAt)
     tick()
-    const id = window.setInterval(tick, 1000)
+    // 50ms so the centiseconds in the timer box stay live (final design)
+    const id = window.setInterval(tick, 50)
     return () => window.clearInterval(id)
   }, [game])
 

@@ -4,11 +4,12 @@ import { Grid } from './Grid'
 import { Keyboard } from './Keyboard'
 import { ResultSheet } from './ResultSheet'
 
-function fmtTimer(ms: number): string {
+function fmtTimer(ms: number): { main: string; cs: string } {
   const sec = Math.floor(ms / 1000)
   const m = Math.floor(sec / 60)
   const s = sec % 60
-  return `${m}:${String(s).padStart(2, '0')}`
+  const cs = Math.floor((ms % 1000) / 10)
+  return { main: `${m}:${String(s).padStart(2, '0')}`, cs: `.${String(cs).padStart(2, '0')}` }
 }
 
 export function PlayScreen({ api }: { api: GameApi }) {
@@ -49,7 +50,7 @@ export function PlayScreen({ api }: { api: GameApi }) {
         <p className="muted">
           Guess the five-letter word in six tries. Fewer guesses, faster solve, fewer hints — more points.
         </p>
-        <p className="muted small">⏱ The timer starts the moment you press play.</p>
+        <p className="small">⏱ The timer starts the moment you press play.</p>
         <button className="btn btn-primary btn-big" disabled={busy} onClick={() => void api.start()}>
           Play today’s Punto
         </button>
@@ -59,19 +60,10 @@ export function PlayScreen({ api }: { api: GameApi }) {
 
   const done = game.status !== 'playing'
   const showSheet = done && !sheetDismissed
+  const timer = fmtTimer(elapsedMs)
 
   return (
     <div className="play">
-      <div className="hud">
-        <div className="hud-chip" aria-label="Timer">
-          ⏱ {fmtTimer(elapsedMs)}
-        </div>
-        <div className="hud-chip">
-          {game.rows.length}/{today.maxGuesses} guesses
-        </div>
-        <div className="hud-chip">💡 {game.hints.length}/{today.maxHints}</div>
-      </div>
-
       <Grid
         rows={game.rows}
         current={current}
@@ -85,22 +77,30 @@ export function PlayScreen({ api }: { api: GameApi }) {
         <div className="hint-chips" aria-label="Hints">
           {game.hints.map(h => (
             <span key={h.pos} className="hint-chip">
-              💡 {h.letter.toUpperCase()} in spot {h.pos + 1}
+              {h.letter.toUpperCase()} in spot {h.pos + 1}
             </span>
           ))}
         </div>
       )}
 
       {!done && (
-        <div className="actions">
-          <button className="btn btn-hint" disabled={busy || game.hints.length >= today.maxHints} onClick={() => void api.requestHint()}>
-            💡 Hint · {today.hintCostNim} NIM
-            <span className="btn-sub">free in beta</span>
+        <div className="cta">
+          <button
+            className="hint-btn"
+            disabled={busy || game.hints.length >= today.maxHints}
+            title={`Hint · ${today.hintCostNim} NIM (free in beta)`}
+            onClick={() => void api.requestHint()}
+          >
+            <span className="hint-dot" aria-hidden="true" />
+            Hint
           </button>
-          <button className="btn btn-duel" onClick={() => api.notify('Duels are coming soon')}>
-            ⚔️ Duel a friend
-            <span className="btn-sub">soon</span>
-          </button>
+          <div className="timer-box" aria-label="Timer">
+            <span className="timer-dot" aria-hidden="true" />
+            <span className="timer-digits">
+              <span className="timer-main">{timer.main}</span>
+              <span className="timer-cs">{timer.cs}</span>
+            </span>
+          </div>
         </div>
       )}
 

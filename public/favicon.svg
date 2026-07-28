@@ -1,13 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#272c58"/>
-      <stop offset="1" stop-color="#1F2348"/>
-    </linearGradient>
+    <radialGradient id="goldGlow" cx="0.88" cy="-0.12" r="1.1">
+      <stop offset="0" stop-color="#E9B213" stop-opacity="0.55"/>
+      <stop offset="0.62" stop-color="#E9B213" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="tealGlow" cx="0.08" cy="1.12" r="1.05">
+      <stop offset="0" stop-color="#21BCA5" stop-opacity="0.5"/>
+      <stop offset="0.62" stop-color="#21BCA5" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
-  <rect x="8" y="8" width="22" height="22" rx="5" fill="#21BCA5"/>
-  <rect x="34" y="8" width="22" height="22" rx="5" fill="#E9B213"/>
-  <rect x="8" y="34" width="22" height="22" rx="5" fill="#3A3F63"/>
-  <text x="45" y="51" text-anchor="middle" font-family="Mulish, Arial, sans-serif" font-size="24" font-weight="800" fill="#fff">P</text>
+  <!-- Icon radius is 26% of size; navy base, gold top-right + teal bottom-left glow -->
+  <rect width="64" height="64" rx="16.6" fill="#1F2348"/>
+  <rect width="64" height="64" rx="16.6" fill="url(#goldGlow)"/>
+  <rect width="64" height="64" rx="16.6" fill="url(#tealGlow)"/>
+  <text x="29" y="45" text-anchor="middle" font-family="Mulish, -apple-system, Arial, sans-serif" font-size="38" font-weight="900" fill="#FFFFFF">P</text>
+  <circle cx="45" cy="42" r="5" fill="#21BCA5"/>
 </svg>
