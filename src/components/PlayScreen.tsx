@@ -124,29 +124,34 @@ export function PlayScreen({ api }: { api: GameApi }) {
       </div>
 
       {!done && (
-        <>
-          <div className="score-pill" aria-label="Live score">
-            {liveScore.toLocaleString('en-US')} pts
-          </div>
-          <div className="cta">
-            <button
-              className="hint-btn"
-              disabled={busy || game.hints.length >= today.maxHints}
-              title={`Hint · ${cfg.hintPoints} points / ${today.hintCostNim} NIM`}
-              onClick={() => setConfirmHint(true)}
-            >
+        <div className="cta">
+          <button
+            className="stat-box hint-btn"
+            disabled={busy || game.hints.length >= today.maxHints}
+            title={`Hint · ${cfg.hintPoints} points / ${today.hintCostNim} NIM`}
+            onClick={() => setConfirmHint(true)}
+          >
+            <span className="stat-caption">−{cfg.hintPoints} pts</span>
+            <span className="stat-value hint-value">
               <span className="hint-dot" aria-hidden="true" />
-              Hint (−{cfg.hintPoints})
-            </button>
-            <div className="timer-box" aria-label="Timer">
+              Hint
+            </span>
+          </button>
+          <div className="stat-box" aria-label="Timer">
+            <span className="stat-caption">
               <span className="timer-dot" aria-hidden="true" />
-              <span className="timer-digits">
-                <span className="timer-main">{timer.main}</span>
-                <span className="timer-cs">{timer.cs}</span>
-              </span>
-            </div>
+              Time
+            </span>
+            <span className="stat-value timer-digits">
+              <span className="timer-main">{timer.main}</span>
+              <span className="timer-cs">{timer.cs}</span>
+            </span>
           </div>
-        </>
+          <div className="stat-box" aria-label="Live score">
+            <span className="stat-caption">Points</span>
+            <span className="stat-value score-value">{liveScore.toLocaleString('en-US')}</span>
+          </div>
+        </div>
       )}
 
       <Keyboard keyStates={keyStates} onKey={api.pressKey} disabled={busy || done} />

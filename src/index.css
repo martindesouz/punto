@@ -253,8 +253,8 @@ h2 {
   flex: 0 1 auto;
   min-height: 0;
   /* Tile size tracks both viewport width and the height left over after
-     header, CTA row, keyboard, and tab bar (~440px of fixed chrome). */
-  --tile-size: clamp(40px, min(15.2vw, calc((100dvh - 455px) / 6)), 62px);
+     header, stat row, keyboard, and tab bar (~475px of fixed chrome). */
+  --tile-size: clamp(34px, min(15.2vw, calc((100dvh - 475px) / 6)), 62px);
 }
 
 .grid-row {
@@ -394,32 +394,75 @@ h2 {
   80% { transform: translateX(3px); }
 }
 
-/* ── CTA row: Hint + Timer ─────────────────────────────────────────── */
+/* ── CTA row: Hint / Time / Points stat tiles ──────────────────────── */
 .cta {
   display: flex;
-  gap: var(--gap-section);
+  gap: 10px;
   width: 100%;
   padding: 0 var(--gutter);
 }
 
-.hint-btn {
-  flex: 2;
-  min-height: 50px;
+.stat-box {
+  flex: 1;
+  min-height: 56px;
+  min-width: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 3px;
+  padding: 7px 8px;
   border-radius: var(--r-tile);
-  background: rgba(233, 178, 19, 0.12);
-  border: 1px solid rgba(233, 178, 19, 0.55);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+}
+
+.stat-caption {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -0.4px;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.score-value {
   color: var(--gold);
+}
+
+.hint-btn {
+  background: rgba(233, 178, 19, 0.12);
+  border-color: rgba(233, 178, 19, 0.55);
   font-family: var(--font);
-  font-size: 0.85rem;
-  font-weight: 800;
   cursor: pointer;
   transition: transform 0.08s ease;
+}
+
+.hint-btn .stat-caption {
+  color: rgba(233, 178, 19, 0.75);
+}
+
+.hint-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gold);
+  font-size: 1.05rem;
+  font-weight: 800;
 }
 
 .hint-btn:active {
@@ -438,32 +481,6 @@ h2 {
   background: var(--gold);
 }
 
-.timer-box {
-  flex: 3;
-  min-height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: var(--r-tile);
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-}
-
-/* Slim live-score readout, separate from the timer. */
-.score-pill {
-  padding: 4px 14px;
-  border-radius: var(--r-chip);
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  color: var(--gold);
-  font-size: 0.85rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
 .mode-pill {
   padding: 3px 12px;
   border-radius: var(--r-chip);
@@ -475,8 +492,8 @@ h2 {
 }
 
 .timer-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--teal);
   animation: live-pulse 1.8s ease-out infinite;
@@ -490,14 +507,14 @@ h2 {
 }
 
 .timer-main {
-  font-size: 1.85rem;
+  font-size: 1.25rem;
   font-weight: 900;
-  letter-spacing: -0.8px;
+  letter-spacing: -0.4px;
   color: var(--ink);
 }
 
 .timer-cs {
-  font-size: 1.05rem;
+  font-size: 0.8rem;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.55);
 }
