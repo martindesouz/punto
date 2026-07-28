@@ -254,8 +254,9 @@ h2 {
   flex: 0 1 auto;
   min-height: 0;
   /* Tile size tracks both viewport width and the height left over after
-     header, stat row, keyboard, tab bar, and the hint line (~495px). */
-  --tile-size: clamp(30px, min(15.2vw, calc((100dvh - 495px) / 6)), 62px);
+     header, stat row, the iOS-size keyboard, tab bar, and the hint line
+     (~545px of fixed chrome). */
+  --tile-size: clamp(28px, min(15.2vw, calc((100dvh - 545px) / 6)), 62px);
 }
 
 .grid-row {
@@ -657,35 +658,41 @@ h2 {
 }
 
 /* ── Keyboard ──────────────────────────────────────────────────────── */
+/* Sized like the iOS system keyboard: full width, 6px key gaps, tall
+   keys, large letters. */
 .keyboard {
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--gap-key);
-  padding: 0 var(--gutter) var(--gap-section);
+  gap: 9px;
+  padding: 4px 3px 10px;
   flex: 0 0 auto;
 }
 
 .kb-row {
   display: flex;
-  gap: var(--gap-key);
+  gap: 6px;
   justify-content: center;
+}
+
+/* The A-row sits inset by half a key, like iOS. */
+.kb-row-mid {
+  padding: 0 5%;
 }
 
 .key {
   flex: 1;
-  max-width: 44px;
   min-width: 0;
-  height: 45px;
+  height: 46px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--r-tile);
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.09);
   color: var(--ink);
   font-family: var(--font);
-  font-size: 0.95rem;
-  font-weight: 800;
+  font-size: 1.3rem;
+  font-weight: 700;
   text-transform: uppercase;
   cursor: pointer;
   transition: filter 0.1s ease, background 0.15s ease;
@@ -697,23 +704,45 @@ h2 {
   filter: brightness(1.5);
 }
 
-/* Backspace carries the hint's gold branding, Enter the points teal. */
+/* Mirrors the backspace width so the Z-M letters stay centered. */
+.key-spacer {
+  flex: 1.35;
+}
+
+/* Backspace carries the hint's gold branding, Enter the points teal.
+   Enter sits directly below backspace, iOS return-key style. */
 .key.back {
-  flex: 1.3;
-  max-width: 56px;
-  font-size: 0.95rem;
+  flex: 1.35;
+  font-size: 1.1rem;
   background: rgba(233, 178, 19, 0.12);
   border-color: rgba(233, 178, 19, 0.55);
   color: var(--gold);
 }
 
+.kb-row-last {
+  justify-content: flex-end;
+}
+
 .key.enter {
-  flex: 1.7;
-  max-width: 78px;
-  font-size: 0.68rem;
+  flex: 0 0 28%;
+  max-width: 150px;
+  font-size: 0.85rem;
+  font-weight: 800;
   background: rgba(33, 188, 165, 0.12);
   border-color: rgba(33, 188, 165, 0.5);
   color: var(--teal);
+}
+
+/* Short screens: compress the keyboard like iOS does in landscape. */
+@media (max-height: 700px) {
+  .keyboard {
+    gap: 7px;
+  }
+
+  .key {
+    height: 40px;
+    font-size: 1.15rem;
+  }
 }
 
 .key.c {
