@@ -254,9 +254,8 @@ h2 {
   flex: 0 1 auto;
   min-height: 0;
   /* Tile size tracks both viewport width and the height left over after
-     header, stat row, the iOS-size keyboard, tab bar, and the hint line
-     (~545px of fixed chrome). */
-  --tile-size: clamp(28px, min(15.2vw, calc((100dvh - 545px) / 6)), 62px);
+     header, stat row, keyboard, tab bar, and the hint line (~495px). */
+  --tile-size: clamp(30px, min(15.2vw, calc((100dvh - 495px) / 6)), 62px);
 }
 
 .grid-row {
@@ -658,28 +657,22 @@ h2 {
 }
 
 /* ── Keyboard ──────────────────────────────────────────────────────── */
-/* Sized like the iOS system keyboard: full width, 6px key gaps, tall
-   keys, large letters. */
+/* Three full-width rows with even gaps; keys stretch to fill. */
 .keyboard {
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  padding: 4px 3px 10px;
+  gap: var(--gap-key);
+  padding: 0 var(--gutter) var(--gap-section);
   flex: 0 0 auto;
 }
 
 .kb-row {
   display: flex;
-  gap: 6px;
+  gap: var(--gap-key);
   justify-content: center;
-}
-
-/* The A-row sits inset by half a key, like iOS. */
-.kb-row-mid {
-  padding: 0 5%;
 }
 
 .key {
@@ -687,12 +680,12 @@ h2 {
   min-width: 0;
   height: 46px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
+  border-radius: var(--r-tile);
   background: rgba(255, 255, 255, 0.09);
   color: var(--ink);
   font-family: var(--font);
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
   text-transform: uppercase;
   cursor: pointer;
   transition: filter 0.1s ease, background 0.15s ease;
@@ -704,45 +697,21 @@ h2 {
   filter: brightness(1.5);
 }
 
-/* Mirrors the backspace width so the Z-M letters stay centered. */
-.key-spacer {
-  flex: 1.35;
-}
-
-/* Backspace carries the hint's gold branding, Enter the points teal.
-   Enter sits directly below backspace, iOS return-key style. */
+/* Backspace closes the A-row (gold, hint branding); Enter closes the
+   bottom row beside M (teal, points branding), spanning three units. */
 .key.back {
-  flex: 1.35;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   background: rgba(233, 178, 19, 0.12);
   border-color: rgba(233, 178, 19, 0.55);
   color: var(--gold);
 }
 
-.kb-row-last {
-  justify-content: flex-end;
-}
-
 .key.enter {
-  flex: 0 0 28%;
-  max-width: 150px;
+  flex: 3.1;
   font-size: 0.85rem;
-  font-weight: 800;
   background: rgba(33, 188, 165, 0.12);
   border-color: rgba(33, 188, 165, 0.5);
   color: var(--teal);
-}
-
-/* Short screens: compress the keyboard like iOS does in landscape. */
-@media (max-height: 700px) {
-  .keyboard {
-    gap: 7px;
-  }
-
-  .key {
-    height: 40px;
-    font-size: 1.15rem;
-  }
 }
 
 .key.c {
