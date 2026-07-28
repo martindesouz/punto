@@ -3,7 +3,7 @@
   --navy: #1f2348;
   --gold: #e9b213;
   --teal: #21bca5;
-  --green: #4caf50; /* correct tiles flash green before settling to teal */
+  --green: #00ca49; /* correct tiles flash green before settling to teal */
   --orange: #fc8702;
   --blue: #0582ca;
 
@@ -491,18 +491,35 @@ h2 {
   color: var(--teal);
 }
 
-/* The time tile breathes a little wider than its neighbors; the live dot
-   anchors to its left edge so the readout itself stays centered. */
-.stat-time {
+/* The timer runs bare between the tiles: live dot, then big white digits. */
+.timer-bare {
   flex: 1.35;
-  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
 }
 
-.stat-time .timer-dot {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
+.timer-digits {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-main {
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: -0.8px;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.timer-cs {
+  font-size: 1rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* Points tile: teal, completing the gold / neutral / teal triad. */
