@@ -85,8 +85,8 @@ export function useGame(): GameApi {
     }
     const tick = () => setElapsedMs(Date.now() - game.startedAt)
     tick()
-    // 50ms so the centiseconds in the timer stay live
-    const id = window.setInterval(tick, 50)
+    // 250ms keeps the whole-second flips of timer and points crisp and in sync
+    const id = window.setInterval(tick, 250)
     return () => window.clearInterval(id)
   }, [game])
 

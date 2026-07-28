@@ -4,12 +4,13 @@ import { Grid } from './Grid'
 import { Keyboard } from './Keyboard'
 import { ResultSheet } from './ResultSheet'
 
-function fmtTimer(ms: number): { main: string; cs: string } {
+// Whole seconds only: the timer ticks up exactly as the points drain
+// down, so the two visibly move together.
+function fmtTimer(ms: number): string {
   const sec = Math.floor(ms / 1000)
   const m = Math.floor(sec / 60)
   const s = sec % 60
-  const cs = Math.floor((ms % 1000) / 10)
-  return { main: `${m}:${String(s).padStart(2, '0')}`, cs: `.${String(cs).padStart(2, '0')}` }
+  return `${m}:${String(s).padStart(2, '0')}`
 }
 
 const WIN_CELEBRATION_MS = 3800
@@ -137,15 +138,12 @@ export function PlayScreen({ api }: { api: GameApi }) {
               Hint
             </span>
           </button>
-          <div className="stat-box" aria-label="Timer">
+          <div className="stat-box stat-time" aria-label="Timer">
             <span className="stat-caption">
               <span className="timer-dot" aria-hidden="true" />
               Time
             </span>
-            <span className="stat-value timer-digits">
-              <span className="timer-main">{timer.main}</span>
-              <span className="timer-cs">{timer.cs}</span>
-            </span>
+            <span className="stat-value">{timer}</span>
           </div>
           <div className="stat-box" aria-label="Live score">
             <span className="stat-caption">Points</span>

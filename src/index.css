@@ -444,6 +444,11 @@ h2 {
   color: var(--gold);
 }
 
+/* The time tile breathes a little wider than its neighbors. */
+.stat-time {
+  flex: 1.35;
+}
+
 .hint-btn {
   background: rgba(233, 178, 19, 0.12);
   border-color: rgba(233, 178, 19, 0.55);
@@ -497,26 +502,6 @@ h2 {
   border-radius: 50%;
   background: var(--teal);
   animation: live-pulse 1.8s ease-out infinite;
-}
-
-.timer-digits {
-  display: flex;
-  align-items: baseline;
-  gap: 1px;
-  font-variant-numeric: tabular-nums;
-}
-
-.timer-main {
-  font-size: 1.25rem;
-  font-weight: 900;
-  letter-spacing: -0.4px;
-  color: var(--ink);
-}
-
-.timer-cs {
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.55);
 }
 
 /* ── Hints ─────────────────────────────────────────────────────────── */
