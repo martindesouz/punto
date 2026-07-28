@@ -750,6 +750,145 @@ h2 {
   max-width: 300px;
 }
 
+/* ── Duels ─────────────────────────────────────────────────────────── */
+.duel-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-section);
+  padding: 4px var(--gutter) var(--gap-section);
+}
+
+.duel-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--r-group);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.challenge-card {
+  border-color: rgba(233, 178, 19, 0.45);
+  text-align: center;
+  align-items: center;
+}
+
+.duel-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.duel-stake {
+  font-weight: 800;
+  color: var(--gold);
+  font-size: 0.92rem;
+}
+
+.duel-day {
+  font-weight: 800;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.duel-status {
+  margin: 0;
+  font-weight: 700;
+  color: var(--ink-dim);
+  font-size: 0.92rem;
+}
+
+.duel-heading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.duel-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.duel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-small {
+  min-height: 44px;
+  font-size: 0.85rem;
+  padding: 6px 14px;
+}
+
+.ok-note {
+  color: var(--teal);
+  font-weight: 800;
+}
+
+.stake-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stake-input {
+  width: 110px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: var(--r-tile);
+  border: 1px solid var(--glass-border);
+  background: rgba(15, 19, 48, 0.6);
+  color: var(--gold);
+  font-family: var(--font);
+  font-size: 1.2rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.stake-input:focus {
+  outline: none;
+  border-color: rgba(233, 178, 19, 0.55);
+}
+
+.stake-unit {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.address-box {
+  margin: 0;
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--r-tile);
+  background: rgba(15, 19, 48, 0.6);
+  border: 1px solid var(--glass-border);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--teal);
+  word-break: break-all;
+  text-align: left;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+.warn-banner {
+  padding: 12px 14px;
+  border-radius: var(--r-group);
+  background: rgba(252, 135, 2, 0.12);
+  border: 1px solid rgba(252, 135, 2, 0.5);
+  color: var(--orange);
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
 /* ── Modal (hint confirmation) ─────────────────────────────────────── */
 .modal-backdrop {
   position: absolute;

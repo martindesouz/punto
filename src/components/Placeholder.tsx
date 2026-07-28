@@ -1,19 +1,5 @@
 import { useNimiq } from '../nimiq/NimiqContext'
 
-export function DuelScreen() {
-  return (
-    <div className="center-card">
-      <span className="ph-icon" aria-hidden="true">⚔️</span>
-      <h2>Duels</h2>
-      <p className="muted">
-        Challenge a friend to the same word, same seed. Winner takes the stake — settled peer to peer, no
-        escrow, no rake.
-      </p>
-      <p className="muted small">Arriving in a later phase. Free duels first, NIM stakes after.</p>
-    </div>
-  )
-}
-
 export function RanksScreen() {
   return (
     <div className="center-card">
@@ -25,12 +11,18 @@ export function RanksScreen() {
   )
 }
 
-export function WalletScreen() {
+export function WalletScreen({ unsettled }: { unsettled: number }) {
   const { status } = useNimiq()
   return (
     <div className="center-card">
       <span className="ph-icon" aria-hidden="true">👛</span>
       <h2>Wallet</h2>
+      {unsettled > 0 && (
+        <div className="warn-banner" role="alert">
+          ⚠️ {unsettled} unsettled duel{unsettled > 1 ? 's' : ''} on this device. Settle from the Duel tab to
+          clear this flag.
+        </div>
+      )}
       {status === 'ready' && <p className="wallet-status ok">● Connected to Nimiq Pay</p>}
       {status === 'connecting' && <p className="wallet-status">● Looking for Nimiq Pay…</p>}
       {status === 'unavailable' && (
