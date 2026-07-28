@@ -132,10 +132,7 @@ export function PlayScreen({ api }: { api: GameApi }) {
             onClick={() => setConfirmHint(true)}
           >
             <span className="stat-caption">−{cfg.hintPoints} pts</span>
-            <span className="stat-value hint-value">
-              <span className="hint-dot" aria-hidden="true" />
-              Hint
-            </span>
+            <span className="stat-value hint-value">Hint</span>
           </button>
           <div className="timer-bare" aria-label="Timer">
             <span className="timer-dot" aria-hidden="true" />
@@ -155,6 +152,9 @@ export function PlayScreen({ api }: { api: GameApi }) {
 
       {celebrating === 'won' && (
         <div className="win-banner" role="status">
+          <svg className="win-check" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4.5 12.5l5 5 10-11" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           Correct!
         </div>
       )}
