@@ -1,32 +1,37 @@
-# React + TypeScript + Vite
+# 🅿️ Punto
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**The daily word duel.** A [Nimiq Pay Mini App](https://nimiq.dev/mini-apps/) built for the Nimiq Mini Apps Competition.
 
-Currently, two official plugins are available:
+Guess the five-letter word in six tries — scored on fewest guesses, fastest solve, and fewest hints. Punto is the word game; Duel is the platform it lives in: challenge a friend to the same word, same seed, and settle the stake wallet-to-wallet. No signup, no escrow, no rake.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Status
 
-## React Compiler
+- ✅ **Phase 1 — Solo daily Punto**: server-side daily word, points + timer + hints scoring, streaks (local), liquid-glass UI
+- ⏳ Phase 2 — NIM hint purchases via `sendBasicTransactionWithData`
+- ⏳ Phase 3 — Device-identifier leaderboard + streaks
+- ⏳ Phase 4 — Spanish-first localization (`window.nimiqPay.language`)
+- ⏳ Phase 5 — Share result + challenge-a-friend deeplink
+- ⏳ Phase 6 — Async duels with honor settlement
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Architecture
 
-## Expanding the Oxlint configuration
+- **Client**: Vite + React + TypeScript. Mobile-first liquid-glass UI (navy `#1F2348`, gold `#E9B213`, teal `#21BCA5`, Mulish).
+- **Server**: Vercel serverless functions in [`api/`](api/). The daily word, seed, and all scoring live server-side — the answer never reaches the client until the game ends. Game state travels in an HMAC-signed token, so phase 1 needs no database and no client trust.
+- **Dev**: a Vite middleware ([vite.config.ts](vite.config.ts)) serves the same `api/` handlers locally — `npm run dev` runs the full stack on one origin.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Develop
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev        # full stack on http://localhost:5173, reachable over LAN
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+To test inside Nimiq Pay: open the **Network URL** printed by Vite (e.g. `http://192.168.x.x:5173`) from **Mini Apps** in Nimiq Pay on a phone on the same Wi-Fi.
+
+Set `PUNTO_SECRET` (any long random string) in production — it keys the daily word pick and the state-token signatures. A dev fallback is used locally.
+
+The allowed-guess dictionary is generated from the [`word-list`](https://www.npmjs.com/package/word-list) package (MIT) and committed; regenerate with `node scripts/build-allowed-words.mjs`.
+
+## License
+
+[MIT](LICENSE)
