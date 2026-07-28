@@ -10,6 +10,7 @@ export interface GameState {
   start: number // ms epoch, set server-side at /start
   guesses: string[]
   hints: number[] // revealed positions (0-4)
+  invalid: number // rejected not-a-word submissions (penalized, not a guess)
   done: boolean
   won: boolean
   end?: number

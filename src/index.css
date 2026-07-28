@@ -386,6 +386,35 @@ h2 {
   border: 1px solid var(--glass-border);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+  padding: 0 10px;
+}
+
+.score-live {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-num {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--gold);
+}
+
+.score-unit {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.cta-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 10px 2px;
+  background: var(--glass-border);
 }
 
 .timer-dot {
@@ -404,14 +433,14 @@ h2 {
 }
 
 .timer-main {
-  font-size: 1.85rem;
+  font-size: 1.15rem;
   font-weight: 900;
-  letter-spacing: -0.8px;
+  letter-spacing: -0.4px;
   color: var(--ink);
 }
 
 .timer-cs {
-  font-size: 1.05rem;
+  font-size: 0.78rem;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.55);
 }
@@ -697,6 +726,12 @@ h2 {
   letter-spacing: -0.5px;
 }
 
+.score-line.floor-note {
+  font-size: 0.75rem;
+  color: var(--muted);
+  justify-content: center;
+}
+
 .streak-note,
 .countdown {
   margin: 0;
@@ -713,6 +748,56 @@ h2 {
 .sheet .btn {
   width: 100%;
   max-width: 300px;
+}
+
+/* ── Modal (hint confirmation) ─────────────────────────────────────── */
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 17, 40, 0.55);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: fade 0.15s ease;
+}
+
+.modal {
+  width: 100%;
+  max-width: 300px;
+  padding: 20px;
+  border-radius: var(--r-group);
+  background: rgba(21, 25, 56, 0.95);
+  border: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+  animation: rise 0.2s ease;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.modal strong {
+  color: var(--gold);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.modal-actions .btn {
+  flex: 1;
+  min-height: 44px;
+  font-size: 0.88rem;
 }
 
 /* ── Toast ─────────────────────────────────────────────────────────── */

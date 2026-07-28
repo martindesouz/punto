@@ -42,7 +42,10 @@ export function WalletScreen() {
           </p>
         </>
       )}
-      <p className="muted">Hints cost 5 NIM and duel stakes are settled wallet-to-wallet. No custody, ever.</p>
+      <p className="muted">
+        1 point = 1 NIM. A hint costs 100 points and 100 NIM. Duel stakes are agreed between players and
+        settled wallet-to-wallet — no custody, ever.
+      </p>
     </div>
   )
 }

@@ -3,11 +3,13 @@ import type { Feedback, ScoreBreakdown, TodayInfo } from '../game/types'
 export class ApiError extends Error {
   status: number
   code: string
+  data: Record<string, unknown>
 
-  constructor(status: number, code: string) {
+  constructor(status: number, code: string, data: Record<string, unknown> = {}) {
     super(code)
     this.status = status
     this.code = code
+    this.data = data
   }
 }
 
@@ -18,7 +20,10 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? 'unknown')
+  if (!res.ok) {
+    const payload = data as Record<string, unknown>
+    throw new ApiError(res.status, (payload.error as string) ?? 'unknown', payload)
+  }
   return data as T
 }
 

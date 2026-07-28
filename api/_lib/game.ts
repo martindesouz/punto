@@ -5,7 +5,13 @@ import { ALLOWED_WORDS } from './allowed-words'
 export const WORD_LENGTH = 5
 export const MAX_GUESSES = 6
 export const MAX_HINTS = 3
-export const HINT_COST_NIM = 5
+
+// Scoring model. 1 point = 1 NIM is the pricing anchor.
+export const TIME_POOL = 400
+export const GRACE_SEC = 20
+export const HINT_POINTS = 100
+export const INVALID_POINTS = 15
+export const HINT_COST_NIM = HINT_POINTS
 
 // Puzzle #1 was July 28, 2026 (UTC). Same clock for every player worldwide
 // so duel seeds stay fair.
@@ -55,25 +61,41 @@ export function feedbackFor(answer: string, guess: string): Feedback[] {
 export interface ScoreBreakdown {
   guessesUsed: number
   hintsUsed: number
+  invalidWords: number
   elapsedSec: number
-  guessPoints: number
-  timeBonus: number
-  hintPenalty: number
-  noHintBonus: number
+  guessBonus: number
+  timePool: number
+  hintDeduction: number
+  invalidDeduction: number
+  timePoints: number
   total: number
 }
 
-// Points per PRD: fewest guesses, shortest solve time, fewest hints,
-// +1 bonus for a hint-free solve. A loss scores zero.
-export function scoreGame(won: boolean, guessesUsed: number, hintsUsed: number, elapsedMs: number): ScoreBreakdown {
-  const elapsedSec = Math.max(0, Math.round(elapsedMs / 1000))
+export function timePoolAt(elapsedSec: number): number {
+  return Math.max(0, TIME_POOL - Math.max(0, elapsedSec - GRACE_SEC))
+}
+
+// Two-part score:
+//   guessBonus — guaranteed on solve, never eroded: (7 - guesses) * 100.
+//   timePoints — the time pool (full for GRACE_SEC, then -1/s) minus hint
+//   and invalid-word deductions, floored at zero.
+// Perfect 1000 = guess 1, no hints, solved within the grace period.
+export function scoreGame(
+  won: boolean,
+  guessesUsed: number,
+  hintsUsed: number,
+  invalidWords: number,
+  elapsedMs: number,
+): ScoreBreakdown {
+  const elapsedSec = Math.max(0, Math.floor(elapsedMs / 1000))
+  const base = { guessesUsed, hintsUsed, invalidWords, elapsedSec }
   if (!won) {
-    return { guessesUsed, hintsUsed, elapsedSec, guessPoints: 0, timeBonus: 0, hintPenalty: 0, noHintBonus: 0, total: 0 }
+    return { ...base, guessBonus: 0, timePool: 0, hintDeduction: 0, invalidDeduction: 0, timePoints: 0, total: 0 }
   }
-  const guessPoints = (MAX_GUESSES + 1 - guessesUsed) * 10 // 10..60
-  const timeBonus = Math.max(0, 30 - Math.floor(elapsedSec / 10)) // full 30 under 10s, fades to 0 at 5min
-  const hintPenalty = hintsUsed * 5
-  const noHintBonus = hintsUsed === 0 ? 1 : 0
-  const total = Math.max(0, guessPoints + timeBonus - hintPenalty + noHintBonus)
-  return { guessesUsed, hintsUsed, elapsedSec, guessPoints, timeBonus, hintPenalty, noHintBonus, total }
+  const guessBonus = (MAX_GUESSES + 1 - guessesUsed) * 100 // 600..100
+  const timePool = timePoolAt(elapsedSec)
+  const hintDeduction = hintsUsed * HINT_POINTS
+  const invalidDeduction = invalidWords * INVALID_POINTS
+  const timePoints = Math.max(0, timePool - hintDeduction - invalidDeduction)
+  return { ...base, guessBonus, timePool, hintDeduction, invalidDeduction, timePoints, total: guessBonus + timePoints }
 }

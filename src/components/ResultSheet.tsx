@@ -47,26 +47,31 @@ export function ResultSheet({ game, streak, onClose }: Props) {
         {r && (
           <div className="score-table">
             <div className="score-line">
-              <span>Guesses · {r.guessesUsed}/6</span>
-              <span className="pts">+{r.guessPoints}</span>
+              <span>
+                Guess bonus · solved on {r.guessesUsed} ({6 - r.guessesUsed} left)
+              </span>
+              <span className="pts">+{r.guessBonus}</span>
             </div>
             <div className="score-line">
-              <span>Time · {fmtClock(r.elapsedSec)}</span>
-              <span className="pts">+{r.timeBonus}</span>
+              <span>Time pool · {fmtClock(r.elapsedSec)}</span>
+              <span className="pts">+{r.timePool}</span>
             </div>
             <div className="score-line">
-              <span>Hints · {r.hintsUsed}</span>
-              <span className="pts">{r.hintPenalty > 0 ? `−${r.hintPenalty}` : '−0'}</span>
+              <span>Hints × {r.hintsUsed}</span>
+              <span className="pts">−{r.hintDeduction}</span>
             </div>
-            {r.noHintBonus > 0 && (
-              <div className="score-line bonus">
-                <span>No-hint bonus</span>
-                <span className="pts">+{r.noHintBonus}</span>
+            <div className="score-line">
+              <span>Invalid words × {r.invalidWords}</span>
+              <span className="pts">−{r.invalidDeduction}</span>
+            </div>
+            {r.timePool - r.hintDeduction - r.invalidDeduction < 0 && (
+              <div className="score-line floor-note">
+                <span>Time points floor at 0 — guess bonus untouched</span>
               </div>
             )}
             <div className="score-line total">
               <span>Points</span>
-              <span className="pts">{r.total}</span>
+              <span className="pts">{r.total.toLocaleString('en-US')}</span>
             </div>
           </div>
         )}

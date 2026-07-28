@@ -12,6 +12,7 @@ const handler: Handler = (req, res) => {
     start: Date.now(), // timer starts the moment you begin — server clock
     guesses: [],
     hints: [],
+    invalid: 0,
     done: false,
     won: false,
   }

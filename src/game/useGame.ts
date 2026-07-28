@@ -97,6 +97,7 @@ export function useGame(): GameApi {
         token: res.token,
         rows: [],
         hints: [],
+        invalid: 0,
         status: 'playing',
         startedAt: Date.now(),
       }
@@ -138,9 +139,14 @@ export function useGame(): GameApi {
       }
     } catch (err) {
       if (err instanceof ApiError && err.code === 'not_a_word') {
+        // Server recorded the -15 penalty in the signed state; keep our
+        // token and counter in sync so the live score drops visibly.
+        if (typeof err.data.token === 'string') {
+          update({ ...game, token: err.data.token, invalid: (game.invalid ?? 0) + 1 })
+        }
         setInvalidShake(true)
         window.setTimeout(() => setInvalidShake(false), 500)
-        showToast('Not in the word list')
+        showToast('Not in the word list · −15 pts')
       } else if (err instanceof ApiError && err.code === 'expired') {
         showToast('New day, new Punto!')
         clearGame()

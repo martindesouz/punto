@@ -21,7 +21,12 @@ const handler: Handler = async (req, res) => {
   if (!new RegExp(`^[a-z]{${WORD_LENGTH}}$`).test(guess)) {
     return sendJson(res, 400, { error: 'bad_guess' })
   }
-  if (!isAllowedGuess(guess)) return sendJson(res, 422, { error: 'not_a_word' })
+  if (!isAllowedGuess(guess)) {
+    // -15 from the time pool, recorded in the signed state; the guess row
+    // is NOT consumed.
+    state.invalid = (state.invalid ?? 0) + 1
+    return sendJson(res, 422, { error: 'not_a_word', token: signState(state), invalidWords: state.invalid })
+  }
 
   const answer = dailyWord(state.day)
   const fb = feedbackFor(answer, guess)
@@ -33,7 +38,7 @@ const handler: Handler = async (req, res) => {
     state.done = true
     state.won = won
     state.end = Date.now()
-    const result = scoreGame(won, state.guesses.length, state.hints.length, state.end - state.start)
+    const result = scoreGame(won, state.guesses.length, state.hints.length, state.invalid ?? 0, state.end - state.start)
     return sendJson(res, 200, {
       token: signState(state),
       feedback: fb,

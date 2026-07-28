@@ -15,6 +15,7 @@ function fmtTimer(ms: number): { main: string; cs: string } {
 export function PlayScreen({ api }: { api: GameApi }) {
   const { phase, today, game, current, invalidShake, busy, elapsedMs, keyStates } = api
   const [sheetDismissed, setSheetDismissed] = useState(false)
+  const [confirmHint, setConfirmHint] = useState(false)
 
   if (phase === 'loading') {
     return (
@@ -50,7 +51,7 @@ export function PlayScreen({ api }: { api: GameApi }) {
         <p className="muted">
           Guess the five-letter word in six tries. Fewer guesses, faster solve, fewer hints — more points.
         </p>
-        <p className="small">⏱ The timer starts the moment you press play.</p>
+        <p className="small">A perfect solve is 1,000 points. The timer starts the moment you press play.</p>
         <button className="btn btn-primary btn-big" disabled={busy} onClick={() => void api.start()}>
           Play today’s Punto
         </button>
@@ -61,6 +62,14 @@ export function PlayScreen({ api }: { api: GameApi }) {
   const done = game.status !== 'playing'
   const showSheet = done && !sheetDismissed
   const timer = fmtTimer(elapsedMs)
+  const cfg = today.scoring
+
+  // Live score: what you'd bank by solving with your NEXT guess, right now.
+  // Mirrors the server model — the server remains the authority.
+  const guessBonusNext = (today.maxGuesses - game.rows.length) * 100
+  const poolNow = Math.max(0, cfg.timePool - Math.max(0, Math.floor(elapsedMs / 1000) - cfg.graceSec))
+  const deductions = game.hints.length * cfg.hintPoints + (game.invalid ?? 0) * cfg.invalidPoints
+  const liveScore = guessBonusNext + Math.max(0, poolNow - deductions)
 
   return (
     <div className="play">
@@ -90,13 +99,18 @@ export function PlayScreen({ api }: { api: GameApi }) {
           <button
             className="hint-btn"
             disabled={busy || game.hints.length >= today.maxHints}
-            title={`Hint · ${today.hintCostNim} NIM (free in beta)`}
-            onClick={() => void api.requestHint()}
+            title={`Hint · ${cfg.hintPoints} points / ${today.hintCostNim} NIM`}
+            onClick={() => setConfirmHint(true)}
           >
             <span className="hint-dot" aria-hidden="true" />
-            Hint (−5 pts)
+            Hint (−{cfg.hintPoints})
           </button>
-          <div className="timer-box" aria-label="Timer">
+          <div className="timer-box" aria-label="Score and timer">
+            <span className="score-live">
+              <span className="score-num">{liveScore.toLocaleString('en-US')}</span>
+              <span className="score-unit">pts</span>
+            </span>
+            <span className="cta-divider" aria-hidden="true" />
             <span className="timer-dot" aria-hidden="true" />
             <span className="timer-digits">
               <span className="timer-main">{timer.main}</span>
@@ -112,6 +126,33 @@ export function PlayScreen({ api }: { api: GameApi }) {
         <button className="btn btn-ghost" onClick={() => setSheetDismissed(false)}>
           Show result
         </button>
+      )}
+
+      {confirmHint && !done && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Hint confirmation">
+          <div className="modal">
+            <h3 className="modal-title">Use a hint?</h3>
+            <p className="muted">
+              This hint costs <strong>{cfg.hintPoints} points</strong> and{' '}
+              <strong>{today.hintCostNim} NIM</strong>. Solve clean instead?
+            </p>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setConfirmHint(false)}>
+                Solve clean
+              </button>
+              <button
+                className="btn btn-primary"
+                disabled={busy}
+                onClick={() => {
+                  setConfirmHint(false)
+                  void api.requestHint()
+                }}
+              >
+                Use hint
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showSheet && <ResultSheet game={game} streak={api.streak} onClose={() => setSheetDismissed(true)} />}
