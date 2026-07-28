@@ -8,9 +8,10 @@ interface Props {
   wordLength: number
   invalidShake: boolean
   done: boolean
+  danceRow?: number | null
 }
 
-export function Grid({ rows, current, maxGuesses, wordLength, invalidShake, done }: Props) {
+export function Grid({ rows, current, maxGuesses, wordLength, invalidShake, done, danceRow }: Props) {
   const lines = []
   for (let r = 0; r < maxGuesses; r++) {
     const row = rows[r]
@@ -19,10 +20,11 @@ export function Grid({ rows, current, maxGuesses, wordLength, invalidShake, done
     for (let i = 0; i < wordLength; i++) {
       const letter = row ? row.guess[i] : isCurrent ? (current[i] ?? '') : ''
       const state = row ? row.fb[i] : ''
+      const dancing = danceRow === r
       cells.push(
         <div
           key={i}
-          className={`tile ${state} ${row ? 'reveal' : ''} ${letter && !row ? 'filled' : ''}`}
+          className={`tile ${state} ${row ? 'reveal' : ''} ${dancing ? 'dance' : ''} ${letter && !row ? 'filled' : ''}`}
           style={row ? ({ '--d': `${i * 90}ms` } as CSSProperties) : undefined}
         >
           {letter}

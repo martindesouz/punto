@@ -1,6 +1,7 @@
 import type { GameSnapshot } from './types'
 
 const GAME_KEY = 'punto.game.v1'
+const PRACTICE_KEY = 'punto.practice.v1'
 const STREAK_KEY = 'punto.streak.v1'
 
 interface StreakRecord {
@@ -28,6 +29,27 @@ export function saveGame(snapshot: GameSnapshot): void {
 export function clearGame(): void {
   try {
     localStorage.removeItem(GAME_KEY)
+  } catch {
+    // ignore
+  }
+}
+
+// Practice rounds live in their own slot so they never clobber the daily
+// game (whose token doubles as duel evidence).
+export function loadPractice(): GameSnapshot | null {
+  try {
+    const raw = localStorage.getItem(PRACTICE_KEY)
+    const snap = raw ? (JSON.parse(raw) as GameSnapshot) : null
+    // Practice tokens have no day expiry; keep them for 24h at most.
+    return snap && Date.now() - snap.startedAt < 86_400_000 ? snap : null
+  } catch {
+    return null
+  }
+}
+
+export function savePractice(snapshot: GameSnapshot): void {
+  try {
+    localStorage.setItem(PRACTICE_KEY, JSON.stringify(snapshot))
   } catch {
     // ignore
   }

@@ -1,9 +1,18 @@
 import { todayUTC } from './game'
-import type { Duel, DuelPlayer } from './store'
+import type { Duel, DuelPlayer, StakeCurrency } from './store'
 
-// Nimiq address: NQ + 2 check digits + 32 base32 chars (spaces optional).
-export function normalizeAddress(raw: unknown): string | null {
+export function validCurrency(raw: unknown): StakeCurrency | null {
+  return raw === 'NIM' || raw === 'USDC' ? raw : null
+}
+
+// NIM: NQ + 2 check digits + 32 base32 chars (spaces optional).
+// USDC settles on an EVM chain, so the payout address is 0x-hex.
+export function normalizeAddress(raw: unknown, currency: StakeCurrency): string | null {
   if (typeof raw !== 'string') return null
+  if (currency === 'USDC') {
+    const addr = raw.trim()
+    return /^0x[0-9a-fA-F]{40}$/.test(addr) ? addr : null
+  }
   const compact = raw.toUpperCase().replace(/\s+/g, '')
   if (!/^NQ\d{2}[0-9A-Z]{32}$/.test(compact)) return null
   // Re-group in blocks of 4 for display.
@@ -56,6 +65,7 @@ export function sanitizeDuel(duel: Duel, device: string | null) {
     day: duel.day,
     puzzle: duel.puzzle,
     stake: duel.stake,
+    currency: duel.currency ?? 'NIM',
     status: expired ? ('expired' as const) : duel.status,
     createdAt: duel.createdAt,
     a: playerView(duel.a, device, complete),

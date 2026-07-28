@@ -15,7 +15,7 @@ const handler: Handler = async (req, res) => {
   if (!state) return sendJson(res, 401, { error: 'bad_token' })
 
   const { day } = todayUTC()
-  if (state.day !== day) return sendJson(res, 409, { error: 'expired', day })
+  if (!state.day.startsWith('practice:') && state.day !== day) return sendJson(res, 409, { error: 'expired', day })
   if (state.done) return sendJson(res, 409, { error: 'already_done' })
   if (state.hints.length >= MAX_HINTS) return sendJson(res, 409, { error: 'no_hints_left' })
 

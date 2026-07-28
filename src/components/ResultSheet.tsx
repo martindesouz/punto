@@ -5,6 +5,7 @@ interface Props {
   game: GameSnapshot
   streak: number
   onClose: () => void
+  onPractice: () => void
 }
 
 function fmtClock(sec: number): string {
@@ -23,7 +24,7 @@ function nextPuzzleCountdown(): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-export function ResultSheet({ game, streak, onClose }: Props) {
+export function ResultSheet({ game, streak, onClose, onPractice }: Props) {
   const [countdown, setCountdown] = useState(nextPuzzleCountdown())
   useEffect(() => {
     const id = window.setInterval(() => setCountdown(nextPuzzleCountdown()), 1000)
@@ -31,6 +32,7 @@ export function ResultSheet({ game, streak, onClose }: Props) {
   }, [])
 
   const won = game.status === 'won'
+  const practice = game.mode === 'practice'
   const r = game.result
 
   return (
@@ -66,7 +68,7 @@ export function ResultSheet({ game, streak, onClose }: Props) {
             </div>
             {r.timePool - r.hintDeduction - r.invalidDeduction < 0 && (
               <div className="score-line floor-note">
-                <span>Time points floor at 0 — guess bonus untouched</span>
+                <span>Time points floor at 0. Guess bonus untouched.</span>
               </div>
             )}
             <div className="score-line total">
@@ -75,17 +77,28 @@ export function ResultSheet({ game, streak, onClose }: Props) {
             </div>
           </div>
         )}
-        {won && (
-          <p className="streak-note">
-            🔥 Streak: <strong>{streak}</strong>
-          </p>
+        {practice ? (
+          <p className="streak-note">Practice round. No streak, no leaderboard, just reps.</p>
+        ) : (
+          <>
+            {won && (
+              <p className="streak-note">
+                🔥 Streak: <strong>{streak}</strong>
+              </p>
+            )}
+            <p className="countdown">
+              Next Punto in <strong>{countdown}</strong>
+            </p>
+          </>
         )}
-        <p className="countdown">
-          Next Punto in <strong>{countdown}</strong>
-        </p>
-        <button className="btn btn-primary" onClick={onClose}>
-          Back to the board
-        </button>
+        <div className="modal-actions sheet-actions">
+          <button className="btn" onClick={onClose}>
+            Back to the board
+          </button>
+          <button className="btn btn-primary" onClick={onPractice}>
+            {practice ? 'New word' : 'Practice round'}
+          </button>
+        </div>
       </div>
     </div>
   )

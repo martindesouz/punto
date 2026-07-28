@@ -6,7 +6,7 @@ export function RanksScreen() {
       <span className="ph-icon" aria-hidden="true">🏆</span>
       <h2>Ranks</h2>
       <p className="muted">The global daily leaderboard and streak table land here.</p>
-      <p className="muted small">Coming with device identity — no signup, ever.</p>
+      <p className="muted small">Coming with device identity. No signup, ever.</p>
     </div>
   )
 }
@@ -35,8 +35,8 @@ export function WalletScreen({ unsettled }: { unsettled: number }) {
         </>
       )}
       <p className="muted">
-        1 point = 1 NIM. A hint costs 100 points and 100 NIM. Duel stakes are agreed between players and
-        settled wallet-to-wallet — no custody, ever.
+        1 point = 1 NIM. A hint costs 100 points and 100 NIM. Duel stakes are agreed between players, in NIM
+        or USDC, and settled wallet-to-wallet. No custody, ever.
       </p>
     </div>
   )

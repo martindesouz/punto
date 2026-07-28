@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { GameApi } from '../game/useGame'
 import { Grid } from './Grid'
 import { Keyboard } from './Keyboard'
@@ -12,10 +12,34 @@ function fmtTimer(ms: number): { main: string; cs: string } {
   return { main: `${m}:${String(s).padStart(2, '0')}`, cs: `.${String(cs).padStart(2, '0')}` }
 }
 
+const WIN_CELEBRATION_MS = 3800
+const LOSS_PAUSE_MS = 1400
+
 export function PlayScreen({ api }: { api: GameApi }) {
-  const { phase, today, game, current, invalidShake, busy, elapsedMs, keyStates } = api
+  const { phase, today, game, mode, current, invalidShake, busy, elapsedMs, keyStates } = api
   const [sheetDismissed, setSheetDismissed] = useState(false)
   const [confirmHint, setConfirmHint] = useState(false)
+  const [celebrating, setCelebrating] = useState<null | 'won' | 'lost'>(null)
+  const prevStatus = useRef<string | null>(null)
+
+  // Wordle-style finish: when a game ends live (not on reload), let the
+  // winning row dance and show "Correct!" for a beat before the sheet.
+  useEffect(() => {
+    const status = game ? `${game.mode}:${game.status}` : null
+    const prev = prevStatus.current
+    prevStatus.current = status
+    if (!game || game.status === 'playing') return
+    if (prev === `${game.mode}:playing`) {
+      const kind = game.status === 'won' ? 'won' : 'lost'
+      setCelebrating(kind)
+      setSheetDismissed(false)
+      const id = window.setTimeout(
+        () => setCelebrating(null),
+        kind === 'won' ? WIN_CELEBRATION_MS : LOSS_PAUSE_MS,
+      )
+      return () => window.clearTimeout(id)
+    }
+  }, [game])
 
   if (phase === 'loading') {
     return (
@@ -49,23 +73,26 @@ export function PlayScreen({ api }: { api: GameApi }) {
         </div>
         <h2>Punto #{today?.puzzle ?? '…'}</h2>
         <p className="muted">
-          Guess the five-letter word in six tries. Fewer guesses, faster solve, fewer hints — more points.
+          Guess the five-letter word in six tries. Fewer guesses, faster solves, fewer hints. More points.
         </p>
         <p className="small">A perfect solve is 1,000 points. The timer starts the moment you press play.</p>
-        <button className="btn btn-primary btn-big" disabled={busy} onClick={() => void api.start()}>
+        <button className="btn btn-primary btn-big" disabled={busy} onClick={() => void api.start('daily')}>
           Play today’s Punto
+        </button>
+        <button className="btn btn-ghost" disabled={busy} onClick={() => void api.start('practice')}>
+          Practice with a random word
         </button>
       </div>
     )
   }
 
   const done = game.status !== 'playing'
-  const showSheet = done && !sheetDismissed
+  const showSheet = done && !celebrating && !sheetDismissed
   const timer = fmtTimer(elapsedMs)
   const cfg = today.scoring
 
   // Live score: what you'd bank by solving with your NEXT guess, right now.
-  // Mirrors the server model — the server remains the authority.
+  // Mirrors the server model; the server remains the authority.
   const guessBonusNext = (today.maxGuesses - game.rows.length) * 100
   const poolNow = Math.max(0, cfg.timePool - Math.max(0, Math.floor(elapsedMs / 1000) - cfg.graceSec))
   const deductions = game.hints.length * cfg.hintPoints + (game.invalid ?? 0) * cfg.invalidPoints
@@ -74,6 +101,7 @@ export function PlayScreen({ api }: { api: GameApi }) {
   return (
     <div className="play">
       <div className="board-area">
+        {mode === 'practice' && <span className="mode-pill">Practice · random word</span>}
         <Grid
           rows={game.rows}
           current={current}
@@ -81,6 +109,7 @@ export function PlayScreen({ api }: { api: GameApi }) {
           wordLength={today.wordLength}
           invalidShake={invalidShake}
           done={done}
+          danceRow={celebrating === 'won' ? game.rows.length - 1 : null}
         />
 
         {game.hints.length > 0 && (
@@ -95,37 +124,53 @@ export function PlayScreen({ api }: { api: GameApi }) {
       </div>
 
       {!done && (
-        <div className="cta">
-          <button
-            className="hint-btn"
-            disabled={busy || game.hints.length >= today.maxHints}
-            title={`Hint · ${cfg.hintPoints} points / ${today.hintCostNim} NIM`}
-            onClick={() => setConfirmHint(true)}
-          >
-            <span className="hint-dot" aria-hidden="true" />
-            Hint (−{cfg.hintPoints})
-          </button>
-          <div className="timer-box" aria-label="Score and timer">
-            <span className="score-live">
-              <span className="score-num">{liveScore.toLocaleString('en-US')}</span>
-              <span className="score-unit">pts</span>
-            </span>
-            <span className="cta-divider" aria-hidden="true" />
-            <span className="timer-dot" aria-hidden="true" />
-            <span className="timer-digits">
-              <span className="timer-main">{timer.main}</span>
-              <span className="timer-cs">{timer.cs}</span>
-            </span>
+        <>
+          <div className="score-pill" aria-label="Live score">
+            {liveScore.toLocaleString('en-US')} pts
           </div>
-        </div>
+          <div className="cta">
+            <button
+              className="hint-btn"
+              disabled={busy || game.hints.length >= today.maxHints}
+              title={`Hint · ${cfg.hintPoints} points / ${today.hintCostNim} NIM`}
+              onClick={() => setConfirmHint(true)}
+            >
+              <span className="hint-dot" aria-hidden="true" />
+              Hint (−{cfg.hintPoints})
+            </button>
+            <div className="timer-box" aria-label="Timer">
+              <span className="timer-dot" aria-hidden="true" />
+              <span className="timer-digits">
+                <span className="timer-main">{timer.main}</span>
+                <span className="timer-cs">{timer.cs}</span>
+              </span>
+            </div>
+          </div>
+        </>
       )}
 
       <Keyboard keyStates={keyStates} onKey={api.pressKey} disabled={busy || done} />
 
-      {done && sheetDismissed && (
-        <button className="btn btn-ghost" onClick={() => setSheetDismissed(false)}>
-          Show result
-        </button>
+      {celebrating === 'won' && (
+        <div className="win-banner" role="status">
+          Correct!
+        </div>
+      )}
+
+      {done && sheetDismissed && !celebrating && (
+        <div className="after-actions">
+          <button className="btn btn-ghost" onClick={() => setSheetDismissed(false)}>
+            Show result
+          </button>
+          <button className="btn btn-ghost" disabled={busy} onClick={() => void api.start('practice')}>
+            {mode === 'practice' ? 'New practice word' : 'Practice round'}
+          </button>
+          {mode === 'practice' && (
+            <button className="btn btn-ghost" onClick={() => api.switchMode('daily')}>
+              Today’s Punto
+            </button>
+          )}
+        </div>
       )}
 
       {confirmHint && !done && (
@@ -155,7 +200,14 @@ export function PlayScreen({ api }: { api: GameApi }) {
         </div>
       )}
 
-      {showSheet && <ResultSheet game={game} streak={api.streak} onClose={() => setSheetDismissed(true)} />}
+      {showSheet && (
+        <ResultSheet
+          game={game}
+          streak={api.streak}
+          onClose={() => setSheetDismissed(true)}
+          onPractice={() => void api.start('practice')}
+        />
+      )}
     </div>
   )
 }

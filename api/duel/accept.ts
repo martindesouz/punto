@@ -22,7 +22,7 @@ const handler: Handler = async (req, res) => {
   if (duel.status !== 'open') return sendJson(res, 409, { error: 'not_open', status: duel.status })
   if (duel.a.device === device) return sendJson(res, 409, { error: 'own_challenge' })
 
-  const address = body?.address !== undefined ? normalizeAddress(body.address) : null
+  const address = body?.address !== undefined ? normalizeAddress(body.address, duel.currency ?? 'NIM') : null
   if (duel.stake > 0 && !address) return sendJson(res, 400, { error: 'address_required' })
 
   duel.b = { device, address: address ?? undefined }

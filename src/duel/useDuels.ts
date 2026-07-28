@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { requestDeviceIdentifier } from '@nimiq/mini-app-sdk'
+import { encodeFunctionData, erc20Abi, parseUnits } from 'viem'
 import { getNimiq } from '../nimiq/NimiqContext'
 import { uuid } from '../lib/uuid'
 import { ApiError } from '../lib/api'
 import type { GameSnapshot } from '../game/types'
-import { iLost, type DuelView } from './types'
+import { iLost, type DuelView, type StakeCurrency } from './types'
+
+// USDC stakes settle on Base (chain 0x2105), 6 decimals.
+const BASE_CHAIN_HEX = '0x2105'
+const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
 
 const DEVICE_KEY = 'punto.device.v1'
-const DEVICE_REASON = 'Punto uses a device identifier to track your duels and streaks — no account needed.'
+const DEVICE_REASON = 'Punto uses a device identifier to track your duels and streaks. No account needed.'
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, {
@@ -47,7 +52,7 @@ export interface DuelsApi {
   incoming: DuelView | null
   busy: boolean
   refresh: () => Promise<void>
-  create: (stake: number) => Promise<DuelView | null>
+  create: (stake: number, currency: StakeCurrency) => Promise<DuelView | null>
   accept: (id: string) => Promise<boolean>
   decline: (id: string) => Promise<boolean>
   settle: (duel: DuelView) => Promise<'paid' | 'cancelled' | 'error'>
@@ -135,8 +140,8 @@ export function useDuels({ game, notify }: Options): DuelsApi {
         .then(res => {
           setDuels(prev => prev.map(x => (x.id === res.duel.id ? res.duel : x)))
           setIncoming(prev => (prev?.id === res.duel.id ? res.duel : prev))
-          if (res.duel.status === 'complete') notify('Duel complete — check the Duel tab!')
-          else notify('Score locked in — waiting for your opponent')
+          if (res.duel.status === 'complete') notify('Duel complete! Check the Duel tab')
+          else notify('Score locked in. Waiting for your opponent.')
         })
         .catch(() => {
           submittingRef.current.delete(d.id) // retry on next effect run
@@ -146,10 +151,20 @@ export function useDuels({ game, notify }: Options): DuelsApi {
   }, [deviceId, game, duels, incoming, notify, refresh])
 
   // For a staked duel we need this player's payout address, approved in
-  // the wallet's native account dialog. The SDK reports a declined dialog
-  // as a resolved { error } object, not a rejection.
-  const getMyAddress = useCallback(async (): Promise<string | null> => {
-    if (!window.nimiq && !window.nimiqPay) return null // clearly outside Nimiq Pay — skip the init timeout
+  // the wallet's native account dialog. NIM uses the Nimiq provider; USDC
+  // uses the injected EIP-1193 provider. The Nimiq SDK reports a declined
+  // dialog as a resolved { error } object, not a rejection.
+  const getMyAddress = useCallback(async (currency: StakeCurrency): Promise<string | null> => {
+    if (currency === 'USDC') {
+      if (!window.ethereum) return null
+      try {
+        const accounts = (await window.ethereum.request({ method: 'eth_requestAccounts' })) as string[]
+        return Array.isArray(accounts) ? (accounts[0] ?? null) : null
+      } catch {
+        return null // user declined or provider unavailable
+      }
+    }
+    if (!window.nimiq && !window.nimiqPay) return null // clearly outside Nimiq Pay, skip the init timeout
     try {
       const nimiq = await getNimiq()
       const accounts = await nimiq.listAccounts()
@@ -161,20 +176,20 @@ export function useDuels({ game, notify }: Options): DuelsApi {
   }, [])
 
   const create = useCallback(
-    async (stake: number): Promise<DuelView | null> => {
+    async (stake: number, currency: StakeCurrency): Promise<DuelView | null> => {
       if (!deviceId || busy) return null
       setBusy(true)
       try {
         let address: string | undefined
         if (stake > 0) {
-          const addr = await getMyAddress()
+          const addr = await getMyAddress(currency)
           if (!addr) {
-            notify('Staked duels need your wallet — open Punto inside Nimiq Pay and approve account access')
+            notify('Staked duels need your wallet. Open Punto inside Nimiq Pay and approve account access.')
             return null
           }
           address = addr
         }
-        const res = await post<{ duel: DuelView }>('/api/duel/create', { device: deviceId, stake, address })
+        const res = await post<{ duel: DuelView }>('/api/duel/create', { device: deviceId, stake, currency, address })
         await refresh()
         return res.duel
       } catch {
@@ -195,9 +210,9 @@ export function useDuels({ game, notify }: Options): DuelsApi {
         const target = incoming?.id === id ? incoming : duels.find(d => d.id === id)
         let address: string | undefined
         if ((target?.stake ?? 0) > 0) {
-          const addr = await getMyAddress()
+          const addr = await getMyAddress(target?.currency ?? 'NIM')
           if (!addr) {
-            notify('Staked duels need your wallet — open Punto inside Nimiq Pay and approve account access')
+            notify('Staked duels need your wallet. Open Punto inside Nimiq Pay and approve account access.')
             return false
           }
           address = addr
@@ -207,7 +222,7 @@ export function useDuels({ game, notify }: Options): DuelsApi {
         await refresh()
         return true
       } catch (err) {
-        if (err instanceof ApiError && err.code === 'expired') notify('This challenge expired — duels last one day')
+        if (err instanceof ApiError && err.code === 'expired') notify('This challenge expired. Duels last one day.')
         else if (err instanceof ApiError && err.code === 'not_open') notify('This challenge is no longer open')
         else if (err instanceof ApiError && err.code === 'own_challenge') notify('That’s your own challenge!')
         else notify('Could not accept the challenge')
@@ -230,7 +245,7 @@ export function useDuels({ game, notify }: Options): DuelsApi {
         notify('Challenge declined')
         return true
       } catch {
-        notify('Could not decline — it may have expired')
+        notify('Could not decline. It may have expired.')
         setIncoming(null)
         return false
       } finally {
@@ -243,8 +258,47 @@ export function useDuels({ game, notify }: Options): DuelsApi {
   const settle = useCallback(
     async (duel: DuelView): Promise<'paid' | 'cancelled' | 'error'> => {
       if (!deviceId || !iLost(duel) || !duel.winnerAddress || duel.stake <= 0) return 'error'
+
+      if (duel.currency === 'USDC') {
+        const eth = window.ethereum
+        if (!eth) {
+          notify('Open Punto inside Nimiq Pay to pay, or send USDC from any wallet to the address shown')
+          return 'error'
+        }
+        try {
+          const accounts = (await eth.request({ method: 'eth_requestAccounts' })) as string[]
+          const from = Array.isArray(accounts) ? accounts[0] : undefined
+          if (!from) {
+            notify('Payment cancelled. You can settle any time from the Duel tab.')
+            return 'cancelled'
+          }
+          await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_HEX }] })
+          const data = encodeFunctionData({
+            abi: erc20Abi,
+            functionName: 'transfer',
+            args: [duel.winnerAddress as `0x${string}`, parseUnits(String(duel.stake), 6)],
+          })
+          const txHash = (await eth.request({
+            method: 'eth_sendTransaction',
+            params: [{ from, to: USDC_BASE, data }],
+          })) as string
+          await post('/api/duel/settle', { id: duel.id, device: deviceId, txHash })
+          await refresh()
+          notify('Duel settled. Good game!')
+          return 'paid'
+        } catch (err) {
+          const code = (err as { code?: number }).code
+          if (code === 4001) {
+            notify('Payment cancelled. You can settle any time from the Duel tab.')
+            return 'cancelled'
+          }
+          notify('USDC payment didn’t go through. Check your Base balance and try again.')
+          return 'error'
+        }
+      }
+
       if (!window.nimiq && !window.nimiqPay) {
-        notify('Open Punto inside Nimiq Pay to pay — or send it from any wallet to the address shown')
+        notify('Open Punto inside Nimiq Pay to pay, or send NIM from any wallet to the address shown')
         return 'error'
       }
       try {
@@ -256,15 +310,15 @@ export function useDuels({ game, notify }: Options): DuelsApi {
         })
         if (typeof result !== 'string') {
           // User cancelled the native dialog (or the wallet refused).
-          notify('Payment cancelled — you can settle any time from the Duel tab')
+          notify('Payment cancelled. You can settle any time from the Duel tab.')
           return 'cancelled'
         }
         await post('/api/duel/settle', { id: duel.id, device: deviceId, txHash: result })
         await refresh()
-        notify('Duel settled — good game!')
+        notify('Duel settled. Good game!')
         return 'paid'
       } catch {
-        notify('Payment didn’t go through — open Punto inside Nimiq Pay to settle')
+        notify('Payment didn’t go through. Open Punto inside Nimiq Pay to settle.')
         return 'error'
       }
     },

@@ -7,11 +7,14 @@ export interface DuelPlayerView {
 
 export type DuelStatus = 'open' | 'accepted' | 'declined' | 'complete' | 'expired'
 
+export type StakeCurrency = 'NIM' | 'USDC'
+
 export interface DuelView {
   id: string
   day: string
   puzzle: number
   stake: number
+  currency: StakeCurrency
   status: DuelStatus
   createdAt: number
   a: DuelPlayerView

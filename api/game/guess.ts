@@ -14,7 +14,8 @@ const handler: Handler = async (req, res) => {
   if (!state) return sendJson(res, 401, { error: 'bad_token' })
 
   const { day } = todayUTC()
-  if (state.day !== day) return sendJson(res, 409, { error: 'expired', day })
+  const practice = state.day.startsWith('practice:')
+  if (!practice && state.day !== day) return sendJson(res, 409, { error: 'expired', day })
   if (state.done) return sendJson(res, 409, { error: 'already_done' })
 
   const guess = (body?.guess ?? '').toLowerCase().trim()

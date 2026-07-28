@@ -32,7 +32,10 @@ export interface ScoringConfig {
 
 export type GameStatus = 'playing' | 'won' | 'lost'
 
+export type GameMode = 'daily' | 'practice'
+
 export interface GameSnapshot {
+  mode: GameMode
   day: string
   puzzle: number
   token: string

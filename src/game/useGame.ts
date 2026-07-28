@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, buyHint, fetchToday, startGame, submitGuess } from '../lib/api'
-import { clearGame, getStreak, loadGame, recordWin, saveGame } from './storage'
-import type { Feedback, GameSnapshot, TodayInfo } from './types'
+import { clearGame, getStreak, loadGame, loadPractice, recordWin, saveGame, savePractice } from './storage'
+import type { Feedback, GameMode, GameSnapshot, TodayInfo } from './types'
 
 export type Phase = 'loading' | 'ready' | 'playing' | 'won' | 'lost' | 'offline'
 
 export interface GameApi {
   phase: Phase
   today: TodayInfo | null
-  game: GameSnapshot | null
+  game: GameSnapshot | null // the active game (daily or practice)
+  dailyGame: GameSnapshot | null // always the daily slot; duels submit this
+  mode: GameMode
   current: string
   invalidShake: boolean
   busy: boolean
@@ -16,7 +18,8 @@ export interface GameApi {
   elapsedMs: number
   streak: number
   keyStates: Record<string, Feedback>
-  start: () => Promise<void>
+  start: (mode?: GameMode) => Promise<void>
+  switchMode: (mode: GameMode) => void
   pressKey: (key: string) => void
   requestHint: () => Promise<void>
   retry: () => void
@@ -25,10 +28,16 @@ export interface GameApi {
 
 const TOAST_MS = 1800
 
+function phaseFor(snapshot: GameSnapshot | null): Phase {
+  return snapshot ? snapshot.status : 'ready'
+}
+
 export function useGame(): GameApi {
   const [phase, setPhase] = useState<Phase>('loading')
   const [today, setToday] = useState<TodayInfo | null>(null)
-  const [game, setGame] = useState<GameSnapshot | null>(null)
+  const [daily, setDaily] = useState<GameSnapshot | null>(null)
+  const [practice, setPractice] = useState<GameSnapshot | null>(null)
+  const [mode, setMode] = useState<GameMode>('daily')
   const [current, setCurrent] = useState('')
   const [invalidShake, setInvalidShake] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -36,6 +45,8 @@ export function useGame(): GameApi {
   const [elapsedMs, setElapsedMs] = useState(0)
   const [streak, setStreak] = useState(0)
   const toastTimer = useRef<number | undefined>(undefined)
+
+  const game = mode === 'practice' ? practice : daily
 
   const showToast = useCallback((msg: string) => {
     setToast(msg)
@@ -49,15 +60,13 @@ export function useGame(): GameApi {
       const info = await fetchToday()
       setToday(info)
       setStreak(getStreak(info.day))
-      const stored = loadGame()
-      if (stored && stored.day === info.day) {
-        setGame(stored)
-        setPhase(stored.status)
-      } else {
-        if (stored) clearGame()
-        setGame(null)
-        setPhase('ready')
-      }
+      const storedDaily = loadGame()
+      const validDaily = storedDaily && storedDaily.day === info.day ? storedDaily : null
+      if (storedDaily && !validDaily) clearGame()
+      setDaily(validDaily)
+      setPractice(loadPractice())
+      setMode('daily')
+      setPhase(phaseFor(validDaily))
     } catch {
       setPhase('offline')
     }
@@ -76,40 +85,59 @@ export function useGame(): GameApi {
     }
     const tick = () => setElapsedMs(Date.now() - game.startedAt)
     tick()
-    // 50ms so the centiseconds in the timer box stay live (final design)
+    // 50ms so the centiseconds in the timer stay live
     const id = window.setInterval(tick, 50)
     return () => window.clearInterval(id)
   }, [game])
 
   const update = useCallback((next: GameSnapshot) => {
-    setGame(next)
-    saveGame(next)
+    if (next.mode === 'practice') {
+      setPractice(next)
+      savePractice(next)
+    } else {
+      setDaily(next)
+      saveGame(next)
+    }
   }, [])
 
-  const start = useCallback(async () => {
-    if (busy) return
-    setBusy(true)
-    try {
-      const res = await startGame()
-      const snapshot: GameSnapshot = {
-        day: res.day,
-        puzzle: res.puzzle,
-        token: res.token,
-        rows: [],
-        hints: [],
-        invalid: 0,
-        status: 'playing',
-        startedAt: Date.now(),
+  const start = useCallback(
+    async (startMode: GameMode = 'daily') => {
+      if (busy) return
+      setBusy(true)
+      try {
+        const res = await startGame(startMode === 'practice' ? 'practice' : undefined)
+        const snapshot: GameSnapshot = {
+          mode: startMode,
+          day: res.day,
+          puzzle: res.puzzle,
+          token: res.token,
+          rows: [],
+          hints: [],
+          invalid: 0,
+          status: 'playing',
+          startedAt: Date.now(),
+        }
+        update(snapshot)
+        setMode(startMode)
+        setCurrent('')
+        setPhase('playing')
+      } catch {
+        showToast('Could not reach the server')
+      } finally {
+        setBusy(false)
       }
-      update(snapshot)
+    },
+    [busy, showToast, update],
+  )
+
+  const switchMode = useCallback(
+    (next: GameMode) => {
+      setMode(next)
       setCurrent('')
-      setPhase('playing')
-    } catch {
-      showToast('Could not reach the server')
-    } finally {
-      setBusy(false)
-    }
-  }, [busy, showToast, update])
+      setPhase(phaseFor(next === 'practice' ? practice : daily))
+    },
+    [practice, daily],
+  )
 
   const submit = useCallback(async () => {
     if (!game || !today || game.status !== 'playing' || busy) return
@@ -135,7 +163,7 @@ export function useGame(): GameApi {
       setCurrent('')
       if (res.status !== 'playing') {
         setPhase(res.status)
-        if (res.status === 'won') setStreak(recordWin(next.day))
+        if (res.status === 'won' && next.mode === 'daily') setStreak(recordWin(next.day))
       }
     } catch (err) {
       if (err instanceof ApiError && err.code === 'not_a_word') {
@@ -186,7 +214,7 @@ export function useGame(): GameApi {
       showToast(`Letter ${res.hint.pos + 1} is “${res.hint.letter.toUpperCase()}”`)
     } catch (err) {
       if (err instanceof ApiError && err.code === 'nothing_to_reveal') {
-        showToast('Nothing left to reveal — finish it!')
+        showToast('Nothing left to reveal. Finish it!')
       } else if (err instanceof ApiError && err.code === 'no_hints_left') {
         showToast('No hints left today')
       } else {
@@ -228,6 +256,8 @@ export function useGame(): GameApi {
     phase,
     today,
     game,
+    dailyGame: daily,
+    mode,
     current,
     invalidShake,
     busy,
@@ -236,6 +266,7 @@ export function useGame(): GameApi {
     streak,
     keyStates,
     start,
+    switchMode,
     pressKey,
     requestHint,
     retry: () => void boot(),

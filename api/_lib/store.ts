@@ -11,11 +11,14 @@ export interface DuelPlayer {
 
 export type DuelStatus = 'open' | 'accepted' | 'declined' | 'complete'
 
+export type StakeCurrency = 'NIM' | 'USDC'
+
 export interface Duel {
   id: string
   day: string
   puzzle: number
-  stake: number // NIM; 0 = free duel for bragging rights
+  stake: number // 0 = free duel for bragging rights
+  currency: StakeCurrency // USDC settles on Base; NIM on the Nimiq chain
   status: DuelStatus
   createdAt: number
   a: DuelPlayer

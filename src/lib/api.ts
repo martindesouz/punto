@@ -29,8 +29,8 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
 
 export const fetchToday = () => request<TodayInfo>('/api/game/today')
 
-export const startGame = () =>
-  request<{ token: string; day: string; puzzle: number; startedAt: number }>('/api/game/start', {})
+export const startGame = (mode?: 'practice') =>
+  request<{ token: string; day: string; puzzle: number; startedAt: number }>('/api/game/start', mode ? { mode } : {})
 
 export const submitGuess = (token: string, guess: string) =>
   request<{
