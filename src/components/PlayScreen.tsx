@@ -64,24 +64,26 @@ export function PlayScreen({ api }: { api: GameApi }) {
 
   return (
     <div className="play">
-      <Grid
-        rows={game.rows}
-        current={current}
-        maxGuesses={today.maxGuesses}
-        wordLength={today.wordLength}
-        invalidShake={invalidShake}
-        done={done}
-      />
+      <div className="board-area">
+        <Grid
+          rows={game.rows}
+          current={current}
+          maxGuesses={today.maxGuesses}
+          wordLength={today.wordLength}
+          invalidShake={invalidShake}
+          done={done}
+        />
 
-      {game.hints.length > 0 && (
-        <div className="hint-chips" aria-label="Hints">
-          {game.hints.map(h => (
-            <span key={h.pos} className="hint-chip">
-              {h.letter.toUpperCase()} in spot {h.pos + 1}
-            </span>
-          ))}
-        </div>
-      )}
+        {game.hints.length > 0 && (
+          <div className="hint-chips" aria-label="Hints">
+            {game.hints.map(h => (
+              <span key={h.pos} className="hint-chip">
+                {h.letter.toUpperCase()} in spot {h.pos + 1}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {!done && (
         <div className="cta">
@@ -92,7 +94,7 @@ export function PlayScreen({ api }: { api: GameApi }) {
             onClick={() => void api.requestHint()}
           >
             <span className="hint-dot" aria-hidden="true" />
-            Hint
+            Hint (−5 pts)
           </button>
           <div className="timer-box" aria-label="Timer">
             <span className="timer-dot" aria-hidden="true" />

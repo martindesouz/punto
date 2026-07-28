@@ -1,6 +1,7 @@
 import type { Feedback } from '../game/types'
 
-const ROWS = ['qwertyuiop', 'asdfghjkl', '\nzxcvbnm\b'] as const
+// iOS-style bottom row: letters, then backspace and Enter on the right.
+const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm\b\n'] as const
 
 interface Props {
   keyStates: Record<string, Feedback>
@@ -14,23 +15,23 @@ export function Keyboard({ keyStates, onKey, disabled }: Props) {
       {ROWS.map((row, i) => (
         <div key={i} className="kb-row">
           {[...row].map(ch => {
-            if (ch === '\n') {
-              return (
-                <button key="enter" className="key wide" disabled={disabled} onClick={() => onKey('enter')}>
-                  Enter
-                </button>
-              )
-            }
             if (ch === '\b') {
               return (
                 <button
                   key="backspace"
-                  className="key wide"
+                  className="key back"
                   disabled={disabled}
                   aria-label="Backspace"
                   onClick={() => onKey('backspace')}
                 >
                   ⌫
+                </button>
+              )
+            }
+            if (ch === '\n') {
+              return (
+                <button key="enter" className="key enter" disabled={disabled} onClick={() => onKey('enter')}>
+                  Enter
                 </button>
               )
             }
