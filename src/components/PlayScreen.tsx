@@ -101,7 +101,6 @@ export function PlayScreen({ api }: { api: GameApi }) {
   return (
     <div className="play">
       <div className="board-area">
-        {mode === 'practice' && <span className="mode-pill">Practice · random word</span>}
         <Grid
           rows={game.rows}
           current={current}
