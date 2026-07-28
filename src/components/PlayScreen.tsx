@@ -139,13 +139,11 @@ export function PlayScreen({ api }: { api: GameApi }) {
             </span>
           </button>
           <div className="stat-box stat-time" aria-label="Timer">
-            <span className="stat-caption">
-              <span className="timer-dot" aria-hidden="true" />
-              Time
-            </span>
+            <span className="timer-dot" aria-hidden="true" />
+            <span className="stat-caption">Time</span>
             <span className="stat-value">{timer}</span>
           </div>
-          <div className="stat-box" aria-label="Live score">
+          <div className="stat-box stat-points" aria-label="Live score">
             <span className="stat-caption">Points</span>
             <span className="stat-value score-value">{liveScore.toLocaleString('en-US')}</span>
           </div>
