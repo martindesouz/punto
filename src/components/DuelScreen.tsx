@@ -55,6 +55,15 @@ function smsHref(text: string): string {
   return `sms:?&body=${encodeURIComponent(text)}`
 }
 
+// Messages only linkifies plain http(s) URLs, so challenges travel as the
+// web link; this wraps the current challenge back into a Nimiq Pay deeplink
+// for the recipient's jump from browser to wallet.
+function nimiqPayDeeplink(duelId: string): string {
+  return `nimiqpay://miniapp?url=${encodeURIComponent(`${window.location.origin}/?duel=${duelId}`)}`
+}
+
+const insideNimiqPay = () => typeof window !== 'undefined' && (!!window.nimiqPay || !!window.nimiq)
+
 function DuelCard({ duel, duels, onGoPlay }: { duel: DuelView; duels: DuelsApi; onGoPlay: () => void }) {
   const [showSettle, setShowSettle] = useState(false)
   const [copied, setCopied] = useState<'ok' | 'fail' | null>(null)
@@ -86,13 +95,13 @@ function DuelCard({ duel, duels, onGoPlay }: { duel: DuelView; duels: DuelsApi; 
       {duel.status === 'open' && role === 'a' && (
         <>
           <div className="duel-actions">
-            <a className="btn btn-primary btn-small btn-link" href={smsHref(`Duel me in Punto! ${links.deeplink}`)}>
+            <a className="btn btn-primary btn-small btn-link" href={smsHref(`Duel me in Punto! ${links.appUrl}`)}>
               Text the link
             </a>
             <button
               className="btn btn-small"
               onClick={() => {
-                void copyText(links.deeplink).then(result => {
+                void copyText(links.appUrl).then(result => {
                   setCopied(result === 'ok' ? 'ok' : 'fail')
                   if (result === 'ok') window.setTimeout(() => setCopied(null), 1500)
                 })
@@ -103,7 +112,7 @@ function DuelCard({ duel, duels, onGoPlay }: { duel: DuelView; duels: DuelsApi; 
           </div>
           {copied === 'fail' && (
             <>
-              <p className="address-box">{links.deeplink}</p>
+              <p className="address-box">{links.appUrl}</p>
               <p className="small">If pasting comes up empty, long-press the link above, Select All, then Copy.</p>
             </>
           )}
@@ -201,6 +210,18 @@ export function DuelScreen({ duels, playedToday, onGoPlay }: Props) {
             Same word, same day, head to head.{' '}
             {incoming.stake > 0 ? 'Loser pays the winner directly. No escrow.' : ''}
           </p>
+          {!insideNimiqPay() && (
+            <>
+              <a className="btn btn-primary btn-link" href={nimiqPayDeeplink(incoming.id)}>
+                Open in Nimiq Pay
+              </a>
+              <p className="small">
+                {incoming.stake > 0
+                  ? 'Staked duels need the wallet. Open this challenge in Nimiq Pay to accept.'
+                  : 'Free duels also work right here in the browser.'}
+              </p>
+            </>
+          )}
           <div className="modal-actions">
             <button className="btn" disabled={duels.busy} onClick={() => void duels.decline(incoming.id).then(() => duels.clearIncoming())}>
               Decline
@@ -224,10 +245,9 @@ export function DuelScreen({ duels, playedToday, onGoPlay }: Props) {
         <div className="duel-card challenge-card">
           <h3 className="modal-title">Challenge created</h3>
           <p className="muted">
-            Stake: <strong>{fmtStake(created)}</strong>. Send this link to your rival. It opens Punto inside
-            Nimiq Pay:
+            Stake: <strong>{fmtStake(created)}</strong>. Send this link to your rival:
           </p>
-          <p className="address-box">{createdLinks.deeplink}</p>
+          <p className="address-box">{createdLinks.appUrl}</p>
           {copyFailed && (
             <p className="small">
               If pasting comes up empty, long-press the link above, Select All, then Copy, and send it to
@@ -235,7 +255,7 @@ export function DuelScreen({ duels, playedToday, onGoPlay }: Props) {
             </p>
           )}
           <div className="modal-actions">
-            <a className="btn btn-primary btn-link" href={smsHref(`Duel me in Punto! ${createdLinks.deeplink}`)}>
+            <a className="btn btn-primary btn-link" href={smsHref(`Duel me in Punto! ${createdLinks.appUrl}`)}>
               Text the link
             </a>
             {'share' in navigator && typeof navigator.share === 'function' ? (
@@ -246,7 +266,7 @@ export function DuelScreen({ duels, playedToday, onGoPlay }: Props) {
                 Share…
               </button>
             ) : (
-              <button className="btn" onClick={() => doCopy('deeplink', createdLinks.deeplink)}>
+              <button className="btn" onClick={() => doCopy('deeplink', createdLinks.appUrl)}>
                 {copied === 'deeplink' ? 'Copied!' : 'Copy link'}
               </button>
             )}
