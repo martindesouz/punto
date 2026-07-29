@@ -57,9 +57,10 @@ function smsHref(text: string): string {
 
 // Messages only linkifies plain http(s) URLs, so challenges travel as the
 // web link; this wraps the current challenge back into a Nimiq Pay deeplink
-// for the recipient's jump from browser to wallet.
+// for the recipient's jump from browser to wallet. The documented format
+// takes the URL unencoded (our URLs contain no '&', so nesting is safe).
 function nimiqPayDeeplink(duelId: string): string {
-  return `nimiqpay://miniapp?url=${encodeURIComponent(`${window.location.origin}/?duel=${duelId}`)}`
+  return `nimiqpay://miniapp?url=${window.location.origin}/?duel=${duelId}`
 }
 
 const insideNimiqPay = () => typeof window !== 'undefined' && (!!window.nimiqPay || !!window.nimiq)
@@ -178,6 +179,7 @@ export function DuelScreen({ duels, playedToday, onGoPlay }: Props) {
   const [created, setCreated] = useState<DuelView | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [copyFailed, setCopyFailed] = useState(false)
+  const [incomingCopied, setIncomingCopied] = useState(false)
   const incoming = duels.incoming
   const incomingIsForeign = incoming && !incoming.a.isYou && !incoming.b.isYou && incoming.status === 'open'
 
@@ -228,14 +230,24 @@ export function DuelScreen({ duels, playedToday, onGoPlay }: Props) {
           </p>
           {!insideNimiqPay() && (
             <>
-              <a className="btn btn-primary btn-link" href={nimiqPayDeeplink(incoming.id)}>
-                Open in Nimiq Pay
-              </a>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  void copyText(`${window.location.origin}/?duel=${incoming.id}`).then(result => {
+                    setIncomingCopied(result === 'ok')
+                  })
+                }}
+              >
+                {incomingCopied ? 'Copied! Now open Nimiq Pay' : '1. Copy challenge link'}
+              </button>
               <p className="small">
-                {incoming.stake > 0
-                  ? 'Staked duels need the wallet. Open this challenge in Nimiq Pay to accept.'
-                  : 'Free duels also work right here in the browser.'}
+                2. Open <strong>Nimiq Pay → Mini Apps</strong>, paste the link in the URL field, and the
+                challenge opens inside your wallet.
               </p>
+              <a className="btn btn-link btn-small" href={nimiqPayDeeplink(incoming.id)}>
+                Or try opening Nimiq Pay directly
+              </a>
+              {incoming.stake === 0 && <p className="small">Free duels also work right here in the browser.</p>}
             </>
           )}
           <div className="modal-actions">
