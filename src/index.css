@@ -973,6 +973,12 @@ h2 {
   padding: 6px 14px;
 }
 
+/* Anchor styled as a button (sms: share links). */
+.btn-link {
+  text-decoration: none;
+  text-align: center;
+}
+
 .ok-note {
   color: var(--teal);
   font-weight: 800;

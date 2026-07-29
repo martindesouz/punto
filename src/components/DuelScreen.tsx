@@ -12,14 +12,18 @@ function fmtStake(duel: Pick<DuelView, 'stake' | 'currency'>): string {
   return duel.stake > 0 ? `${duel.stake.toLocaleString('en-US')} ${duel.currency}` : 'Free · bragging rights'
 }
 
-// navigator.clipboard needs a secure context, which the plain-HTTP LAN
-// dev URL is not — fall back to a hidden textarea + execCommand, with the
-// selection dance iOS Safari requires.
-async function copyText(text: string): Promise<boolean> {
+// navigator.clipboard needs a secure context (HTTPS). Over plain-HTTP LAN
+// we can only try the legacy execCommand path, and iOS webviews sometimes
+// claim success without actually writing the clipboard, so anything that
+// isn't the real clipboard API reports 'maybe' and the UI shows a manual
+// path too.
+type CopyResult = 'ok' | 'maybe' | 'fail'
+
+async function copyText(text: string): Promise<CopyResult> {
   if (navigator.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(text)
-      return true
+      return 'ok'
     } catch {
       // fall through to the legacy path
     }
@@ -41,10 +45,14 @@ async function copyText(text: string): Promise<boolean> {
     const ok = document.execCommand('copy')
     sel?.removeAllRanges()
     ta.remove()
-    return ok
+    return ok ? 'maybe' : 'fail'
   } catch {
-    return false
+    return 'fail'
   }
+}
+
+function smsHref(text: string): string {
+  return `sms:?&body=${encodeURIComponent(text)}`
 }
 
 function DuelCard({ duel, duels, onGoPlay }: { duel: DuelView; duels: DuelsApi; onGoPlay: () => void }) {
@@ -78,22 +86,25 @@ function DuelCard({ duel, duels, onGoPlay }: { duel: DuelView; duels: DuelsApi; 
       {duel.status === 'open' && role === 'a' && (
         <>
           <div className="duel-actions">
+            <a className="btn btn-primary btn-small btn-link" href={smsHref(`Duel me in Punto! ${links.deeplink}`)}>
+              Text the link
+            </a>
             <button
               className="btn btn-small"
               onClick={() => {
-                void copyText(links.deeplink).then(ok => {
-                  setCopied(ok ? 'ok' : 'fail')
-                  window.setTimeout(() => setCopied(null), ok ? 1500 : 6000)
+                void copyText(links.deeplink).then(result => {
+                  setCopied(result === 'ok' ? 'ok' : 'fail')
+                  if (result === 'ok') window.setTimeout(() => setCopied(null), 1500)
                 })
               }}
             >
-              {copied === 'ok' ? 'Copied!' : 'Copy challenge link'}
+              {copied === 'ok' ? 'Copied!' : 'Copy link'}
             </button>
           </div>
           {copied === 'fail' && (
             <>
               <p className="address-box">{links.deeplink}</p>
-              <p className="small">Copy is blocked over plain HTTP. Long-press the link above, Select All, then Copy.</p>
+              <p className="small">If pasting comes up empty, long-press the link above, Select All, then Copy.</p>
             </>
           )}
         </>
@@ -162,10 +173,10 @@ export function DuelScreen({ duels, playedToday, onGoPlay }: Props) {
   const incomingIsForeign = incoming && !incoming.a.isYou && !incoming.b.isYou && incoming.status === 'open'
 
   const doCopy = (key: string, text: string) => {
-    void copyText(text).then(ok => {
-      setCopied(ok ? key : null)
-      setCopyFailed(!ok)
-      if (ok) window.setTimeout(() => setCopied(null), 1500)
+    void copyText(text).then(result => {
+      setCopied(result === 'ok' ? key : null)
+      setCopyFailed(result !== 'ok')
+      if (result === 'ok') window.setTimeout(() => setCopied(null), 1500)
     })
   }
 
@@ -219,24 +230,24 @@ export function DuelScreen({ duels, playedToday, onGoPlay }: Props) {
           <p className="address-box">{createdLinks.deeplink}</p>
           {copyFailed && (
             <p className="small">
-              Copy is blocked over plain HTTP. Long-press the link above, Select All, then Copy, and send it
-              to your rival.
+              If pasting comes up empty, long-press the link above, Select All, then Copy, and send it to
+              your rival.
             </p>
           )}
           <div className="modal-actions">
-            <button className="btn" onClick={() => doCopy('deeplink', createdLinks.deeplink)}>
-              {copied === 'deeplink' ? 'Copied!' : 'Copy link'}
-            </button>
+            <a className="btn btn-primary btn-link" href={smsHref(`Duel me in Punto! ${createdLinks.deeplink}`)}>
+              Text the link
+            </a>
             {'share' in navigator && typeof navigator.share === 'function' ? (
               <button
-                className="btn btn-primary"
+                className="btn"
                 onClick={() => void navigator.share({ title: 'Punto duel', text: 'Duel me in Punto!', url: createdLinks.appUrl }).catch(() => undefined)}
               >
                 Share…
               </button>
             ) : (
-              <button className="btn btn-primary" onClick={() => doCopy('app', createdLinks.appUrl)}>
-                {copied === 'app' ? 'Copied!' : 'Copy web link'}
+              <button className="btn" onClick={() => doCopy('deeplink', createdLinks.deeplink)}>
+                {copied === 'deeplink' ? 'Copied!' : 'Copy link'}
               </button>
             )}
           </div>
