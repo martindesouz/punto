@@ -12,19 +12,44 @@ function fmtStake(duel: Pick<DuelView, 'stake' | 'currency'>): string {
   return duel.stake > 0 ? `${duel.stake.toLocaleString('en-US')} ${duel.currency}` : 'Free · bragging rights'
 }
 
-function copyText(text: string): Promise<boolean> {
+// navigator.clipboard needs a secure context, which the plain-HTTP LAN
+// dev URL is not — fall back to a hidden textarea + execCommand, with the
+// selection dance iOS Safari requires.
+async function copyText(text: string): Promise<boolean> {
   if (navigator.clipboard?.writeText) {
-    return navigator.clipboard.writeText(text).then(
-      () => true,
-      () => false,
-    )
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch {
+      // fall through to the legacy path
+    }
   }
-  return Promise.resolve(false)
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.readOnly = true
+    ta.style.position = 'fixed'
+    ta.style.top = '0'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    const range = document.createRange()
+    range.selectNodeContents(ta)
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    ta.setSelectionRange(0, text.length)
+    const ok = document.execCommand('copy')
+    sel?.removeAllRanges()
+    ta.remove()
+    return ok
+  } catch {
+    return false
+  }
 }
 
 function DuelCard({ duel, duels, onGoPlay }: { duel: DuelView; duels: DuelsApi; onGoPlay: () => void }) {
   const [showSettle, setShowSettle] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<'ok' | 'fail' | null>(null)
   const role = myRole(duel)
   const mine = role === 'a' ? duel.a : role === 'b' ? duel.b : null
   const links = duels.buildLinks(duel.id)
@@ -51,19 +76,27 @@ function DuelCard({ duel, duels, onGoPlay }: { duel: DuelView; duels: DuelsApi; 
       <p className="duel-status">{statusLine}</p>
 
       {duel.status === 'open' && role === 'a' && (
-        <div className="duel-actions">
-          <button
-            className="btn btn-small"
-            onClick={() => {
-              void copyText(links.deeplink).then(ok => {
-                setCopied(ok)
-                window.setTimeout(() => setCopied(false), 1500)
-              })
-            }}
-          >
-            {copied ? 'Copied!' : 'Copy challenge link'}
-          </button>
-        </div>
+        <>
+          <div className="duel-actions">
+            <button
+              className="btn btn-small"
+              onClick={() => {
+                void copyText(links.deeplink).then(ok => {
+                  setCopied(ok ? 'ok' : 'fail')
+                  window.setTimeout(() => setCopied(null), ok ? 1500 : 6000)
+                })
+              }}
+            >
+              {copied === 'ok' ? 'Copied!' : 'Copy challenge link'}
+            </button>
+          </div>
+          {copied === 'fail' && (
+            <>
+              <p className="address-box">{links.deeplink}</p>
+              <p className="small">Copy is blocked over plain HTTP. Long-press the link above, Select All, then Copy.</p>
+            </>
+          )}
+        </>
       )}
 
       {duel.status === 'accepted' && mine && !mine.submitted && (
@@ -124,13 +157,15 @@ export function DuelScreen({ duels, playedToday, onGoPlay }: Props) {
   const [currency, setCurrency] = useState<StakeCurrency>('NIM')
   const [created, setCreated] = useState<DuelView | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const [copyFailed, setCopyFailed] = useState(false)
   const incoming = duels.incoming
   const incomingIsForeign = incoming && !incoming.a.isYou && !incoming.b.isYou && incoming.status === 'open'
 
   const doCopy = (key: string, text: string) => {
     void copyText(text).then(ok => {
       setCopied(ok ? key : null)
-      window.setTimeout(() => setCopied(null), 1500)
+      setCopyFailed(!ok)
+      if (ok) window.setTimeout(() => setCopied(null), 1500)
     })
   }
 
@@ -182,6 +217,12 @@ export function DuelScreen({ duels, playedToday, onGoPlay }: Props) {
             Nimiq Pay:
           </p>
           <p className="address-box">{createdLinks.deeplink}</p>
+          {copyFailed && (
+            <p className="small">
+              Copy is blocked over plain HTTP. Long-press the link above, Select All, then Copy, and send it
+              to your rival.
+            </p>
+          )}
           <div className="modal-actions">
             <button className="btn" onClick={() => doCopy('deeplink', createdLinks.deeplink)}>
               {copied === 'deeplink' ? 'Copied!' : 'Copy link'}
