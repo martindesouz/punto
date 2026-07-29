@@ -35,5 +35,6 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true, // reachable from the phone over LAN (Nimiq Pay webview)
+    allowedHosts: true, // and through the public HTTPS tunnel for device testing
   },
 })

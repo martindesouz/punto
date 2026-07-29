@@ -20,6 +20,8 @@ export interface GameApi {
   keyStates: Record<string, Feedback>
   start: (mode?: GameMode) => Promise<void>
   switchMode: (mode: GameMode) => void
+  goHome: () => void
+  resume: () => void
   pressKey: (key: string) => void
   requestHint: () => Promise<void>
   retry: () => void
@@ -138,6 +140,16 @@ export function useGame(): GameApi {
     },
     [practice, daily],
   )
+
+  // Home shows the start card without touching the game in progress.
+  const goHome = useCallback(() => {
+    setPhase('ready')
+    setCurrent('')
+  }, [])
+
+  const resume = useCallback(() => {
+    setPhase(phaseFor(mode === 'practice' ? practice : daily))
+  }, [mode, practice, daily])
 
   const submit = useCallback(async () => {
     if (!game || !today || game.status !== 'playing' || busy) return
@@ -267,6 +279,8 @@ export function useGame(): GameApi {
     keyStates,
     start,
     switchMode,
+    goHome,
+    resume,
     pressKey,
     requestHint,
     retry: () => void boot(),

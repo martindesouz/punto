@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { DuelsApi } from '../duel/useDuels'
 import { iLost, iWon, myRole, type DuelView, type StakeCurrency } from '../duel/types'
 
@@ -180,6 +180,22 @@ export function DuelScreen({ duels, playedToday, onGoPlay }: Props) {
   const [copyFailed, setCopyFailed] = useState(false)
   const incoming = duels.incoming
   const incomingIsForeign = incoming && !incoming.a.isYou && !incoming.b.isYou && incoming.status === 'open'
+
+  // Challenge opened in a plain browser: try the wallet jump once on
+  // arrival (iOS shows the "Open in Nimiq Pay?" prompt); the button below
+  // remains as the guaranteed user-gesture path.
+  const incomingId = incomingIsForeign ? incoming.id : null
+  useEffect(() => {
+    if (!incomingId || insideNimiqPay()) return
+    const t = window.setTimeout(() => {
+      try {
+        window.location.href = nimiqPayDeeplink(incomingId)
+      } catch {
+        // stay in the browser; the button covers it
+      }
+    }, 800)
+    return () => window.clearTimeout(t)
+  }, [incomingId])
 
   const doCopy = (key: string, text: string) => {
     void copyText(text).then(result => {

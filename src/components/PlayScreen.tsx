@@ -62,6 +62,9 @@ export function PlayScreen({ api }: { api: GameApi }) {
   }
 
   if (phase === 'ready' || !game || !today) {
+    const activePlaying = game?.status === 'playing'
+    const activeDone = game !== null && game !== undefined && game.status !== 'playing'
+    const canRestart = activePlaying && game.rows.length === 0 && game.hints.length === 0
     return (
       <div className="center-card">
         <div className="start-logo" aria-hidden="true">
@@ -76,12 +79,42 @@ export function PlayScreen({ api }: { api: GameApi }) {
           Guess the five-letter word in six tries. Fewer guesses, faster solves, fewer hints. More points.
         </p>
         <p className="small">A perfect solve is 1,000 points. The timer starts the moment you press play.</p>
-        <button className="btn btn-primary btn-big" disabled={busy} onClick={() => void api.start('daily')}>
-          Play today’s Punto
-        </button>
-        <button className="btn btn-ghost" disabled={busy} onClick={() => void api.start('practice')}>
-          Practice with a random word
-        </button>
+
+        {activePlaying ? (
+          <>
+            <button className="btn btn-primary btn-big" onClick={api.resume}>
+              Resume {mode === 'practice' ? 'practice' : 'game'}
+            </button>
+            {canRestart && (
+              <button className="btn btn-ghost" disabled={busy} onClick={() => void api.start(mode)}>
+                Restart timer at 0:00
+              </button>
+            )}
+          </>
+        ) : activeDone ? (
+          <>
+            <button className="btn btn-primary btn-big" onClick={api.resume}>
+              See {mode === 'practice' ? 'practice' : 'today’s'} result
+            </button>
+            <button className="btn btn-ghost" disabled={busy} onClick={() => void api.start('practice')}>
+              Practice with a random word
+            </button>
+            {mode === 'practice' && (
+              <button className="btn btn-ghost" onClick={() => api.switchMode('daily')}>
+                Today’s Punto
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <button className="btn btn-primary btn-big" disabled={busy} onClick={() => void api.start('daily')}>
+              Play today’s Punto
+            </button>
+            <button className="btn btn-ghost" disabled={busy} onClick={() => void api.start('practice')}>
+              Practice with a random word
+            </button>
+          </>
+        )}
       </div>
     )
   }

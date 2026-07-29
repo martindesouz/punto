@@ -24,7 +24,11 @@ export default function App() {
     <NimiqProvider>
       <div className="bg" aria-hidden="true" />
       <div className="app">
-        <Header streak={game.streak} />
+        <Header
+          streak={game.streak}
+          showBack={tab === 'play' && (game.phase === 'playing' || game.phase === 'won' || game.phase === 'lost')}
+          onBack={game.goHome}
+        />
         <main className="content">
           {tab === 'play' && <PlayScreen api={game} />}
           {tab === 'duel' && <DuelScreen duels={duels} playedToday={playedToday} onGoPlay={() => setTab('play')} />}

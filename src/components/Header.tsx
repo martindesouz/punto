@@ -1,17 +1,28 @@
 interface Props {
   streak: number
+  showBack?: boolean
+  onBack?: () => void
 }
 
 // Placeholder balance so the chip reads correctly; phase 2 replaces this
 // with the real NIM balance from the wallet.
 const TEST_BALANCE_NIM = 1240
 
-export function Header({ streak }: Props) {
+export function Header({ streak, showBack, onBack }: Props) {
   return (
     <header className="header">
-      <div className="logo">
-        <span className="logo-dot" aria-hidden="true" />
-        punto
+      <div className="header-left">
+        {showBack && (
+          <button className="back-btn" aria-label="Back to home" onClick={onBack}>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M14.5 5.5L8 12l6.5 6.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
+        <div className="logo">
+          <span className="logo-dot" aria-hidden="true" />
+          punto
+        </div>
       </div>
       <div className="chips">
         <div className="chip" title="Daily streak">
